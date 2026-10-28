@@ -21,7 +21,7 @@ Juego de memoria con poderes: 2 jugadores en el mismo dispositivo, contra la má
 - En línea: ábrelo con **Live Server** de VS Code (`http://127.0.0.1:5500`) y usa dos **pestañas**: cada pestaña es un jugador distinto. Crea la sala en una y únete con el código en la otra.
   (Abriendo el archivo directo, `file://`, Firebase puede rechazar el inicio de sesión.)
 
-## Publicar (necesario para que el QR funcione en otro celular)
+## Publicar en firebase
 
 ```bash
 npm install -g firebase-tools   # una sola vez
