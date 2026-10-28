@@ -14,8 +14,13 @@ const POWERS = {
   vision:  { name: 'Visión',   desc: 'Revela cartas al azar por un instante (3 en 4×4, 5 en 6×6).', icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>' },
   freeze:  { name: 'Congelar', desc: 'Tu rival pierde su próximo turno.', icon: '<path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7"/><path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2"/>' },
   shuffle: { name: 'Barajar',  desc: 'Mezcla de lugar las cartas sin pareja.', icon: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>' },
-  magnet:  { name: 'Imán',     desc: 'Al voltear una carta, ves dónde está su pareja.', icon: '<path d="M5 3v9a7 7 0 0 0 14 0V3"/><path d="M4 7.5h4M16 7.5h4"/>' },
-  shield:  { name: 'Escudo',   desc: 'Bloquea el próximo poder de tu rival.', icon: '<path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6l-8-3Z"/><path d="m9 12 2 2 4-4"/>' }
+  magnet:  { name: 'Imán',     desc: 'Ves dónde está la pareja de tu carta. Úsalo antes de voltear o con una carta ya volteada.', icon: '<path d="M5 3v9a7 7 0 0 0 14 0V3"/><path d="M4 7.5h4M16 7.5h4"/>' },
+  swap:    { name: 'Intercambio', desc: 'Eliges 2 cartas y se cambian de lugar. Parpadean 2 señuelos más para despistar.', icon: '<path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/>' },
+  compass: { name: 'Brújula',  desc: 'Eliges una carta y se marcan 2 cartas: una es su pareja.', icon: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>' },
+  mirror:  { name: 'Espejo',   desc: 'Copias el último poder que usó tu rival.', icon: '<path d="M12 3v18"/><path d="M8 7 3 12l5 5Z"/><path d="m16 7 5 5-5 5Z"/>' },
+  short:   { name: 'Memoria corta', desc: 'En el próximo turno de tu rival, su primera carta se cierra sola a los 1,5 s.', icon: '<path d="M6 3h12M6 21h12"/><path d="M7 3c0 5 3 5.5 5 9-2 3.5-5 4-5 9"/><path d="M17 3c0 5-3 5.5-5 9 2 3.5 5 4 5 9"/>' },
+  quarantine: { name: 'Cuarentena', desc: 'Eliges una carta y queda aislada: nadie la voltea hasta tu siguiente turno.', icon: '<rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>' },
+  shield:  { name: 'Escudo',   desc: 'Bloquea el próximo poder de tu rival. Dura 1 ronda: si no usa ninguno, se acaba.', icon: '<path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6l-8-3Z"/><path d="m9 12 2 2 4-4"/>' }
 };
 const PIDS = Object.keys(POWERS);
 /* Memoria de la máquina:
@@ -176,8 +181,8 @@ const THEMES = (() => {
   return [
     { id: 'ocean',  name: 'Océano', a: '#2F80ED', b: '#56CCF2', c: '#BFE9FB', d: '#FFA94D', e: '#1B4F9C', ui: '#1D6FDB', icons: ocean,  names: ['pez', 'medusa', 'estrella de mar', 'concha', 'ola', 'burbujas', 'velero', 'coral', 'tortuga', 'pulpo', 'ballena', 'cangrejo', 'ancla', 'faro', 'delfín', 'ostra', 'alga', 'pez globo'] },
     { id: 'forest', name: 'Bosque', a: '#2E9E5B', b: '#8BD17C', c: '#D5F0C8', d: '#F0974A', e: '#8A5A3B', ui: '#1A7F45', icons: forest, names: ['hoja', 'pino', 'hongo', 'bellota', 'mariposa', 'sol', 'flor', 'lluvia', 'búho', 'caracol', 'montaña', 'tulipán', 'trébol', 'arcoíris', 'manzana', 'abeja', 'fogata', 'cabaña'] },
-    { id: 'cosmos', name: 'Cosmos', a: '#6C5CE7', b: '#A29BFE', c: '#E0DCFF', d: '#FFC83D', e: '#2D2A6E', ui: '#6C5CE7', icons: cosmos, names: ['planeta', 'luna', 'estrella', 'cohete', 'cometa', 'galaxia', 'ovni', 'casco', 'satélite', 'telescopio', 'Tierra', 'alien', 'asteroide', 'constelación', 'agujero negro', 'Marte', 'bandera', 'eclipse'] },
-    { id: 'sweet',  name: 'Dulce',  a: '#FF6B9D', b: '#FFA8C5', c: '#FFE0EA', d: '#F4B26B', e: '#B8456B', ui: '#C92F64', icons: sweet,  names: ['helado', 'cupcake', 'piruleta', 'dona', 'corazón', 'macaron', 'caramelo', 'fresa', 'galleta', 'pastel', 'chocolate', 'paleta', 'cerezas', 'osito de goma', 'flan', 'bastón de caramelo', 'malteada', 'chocolate caliente'] }
+    { id: 'sweet',  name: 'Dulce',  a: '#FF6B9D', b: '#FFA8C5', c: '#FFE0EA', d: '#F4B26B', e: '#B8456B', ui: '#C92F64', icons: sweet,  names: ['helado', 'cupcake', 'piruleta', 'dona', 'corazón', 'macaron', 'caramelo', 'fresa', 'galleta', 'pastel', 'chocolate', 'paleta', 'cerezas', 'osito de goma', 'flan', 'bastón de caramelo', 'malteada', 'chocolate caliente'] },
+    { id: 'midnight', name: 'Medianoche', secret: true, dark: true, a: '#5B3DF5', b: '#9B7BFF', c: '#D8CCFF', d: '#FF4FA3', e: '#0B0E24', ui: '#5B3DF5', icons: cosmos, names: ['planeta', 'luna', 'estrella', 'cohete', 'cometa', 'galaxia', 'ovni', 'casco', 'satélite', 'telescopio', 'Tierra', 'alien', 'asteroide', 'constelación', 'agujero negro', 'Marte', 'bandera', 'eclipse'] }
   ];
 })();
 const themeVars = t => `--a:${t.a};--b:${t.b};--c:${t.c};--d:${t.d};--e:${t.e};--ui:${t.ui}`;
@@ -186,7 +191,9 @@ const themeVars = t => `--a:${t.a};--b:${t.b};--c:${t.c};--d:${t.d};--e:${t.e};-
 let cfg = { mode: 'ai', diff: 'hard', theme: 'ocean', powerMode: 'random', picked: [], size: '16' };
 try { Object.assign(cfg, JSON.parse(localStorage.getItem('pcp-cfg') || '{}')); } catch (e) {}
 if (!SIZES[cfg.size]) cfg.size = '16';
-if (!THEMES.some(t => t.id === cfg.theme)) cfg.theme = 'ocean';
+cfg.secret = !!cfg.secret; cfg.crown = !!cfg.crown;
+const themeOK = t => !t.secret || cfg.secret;
+if (!THEMES.some(t => t.id === cfg.theme && themeOK(t))) cfg.theme = 'ocean';
 cfg.picked = (cfg.picked || []).filter(p => PIDS.includes(p)).slice(0, 3);
 const saveCfg = () => { try { localStorage.setItem('pcp-cfg', JSON.stringify(cfg)); } catch (e) {} };
 
@@ -201,6 +208,8 @@ const theme = () => THEMES.find(t => t.id === cfg.theme);
 function applyTheme() {
   const t = theme(), r = document.documentElement.style;
   ['a', 'b', 'c', 'd', 'e', 'ui'].forEach(k => r.setProperty('--' + k, t[k]));
+  document.documentElement.dataset.tone = t.dark ? 'night' : '';
+  const cr = $('#crown'); if (cr) cr.hidden = !cfg.crown;
   $('#hero').innerHTML = [0, 3, 5].map((i, n) => `<div class="mini" style="--r:${[-9, 0, 9][n]}deg"><div class="mf">${svgOf(t.icons[i])}</div></div>`).join('');
   document.querySelectorAll('.tile').forEach(x => x.setAttribute('aria-pressed', x.dataset.t === cfg.theme));
 }
@@ -232,7 +241,7 @@ function initHome() {
   seg($('#segSize'), Object.entries(SIZES).map(([k, z]) => [k, z.label]), () => cfg.size, v => { cfg.size = v; sizeNote(); saveCfg(); });
   sizeNote();
   paintMode();
-  $('#tiles').innerHTML = THEMES.map(t => `<button class="tile" data-t="${t.id}" style="${themeVars(t)}" aria-pressed="false">${svgOf(t.icons[0])}<span>${t.name}</span></button>`).join('');
+  $('#tiles').innerHTML = THEMES.filter(themeOK).map(t => `<button class="tile" data-t="${t.id}" style="${themeVars(t)}" aria-pressed="false">${svgOf(t.icons[0])}<span>${t.name}</span></button>`).join('');
   $('#tiles').onclick = ev => { const x = ev.target.closest('.tile'); if (!x) return; cfg.theme = x.dataset.t; saveCfg(); applyTheme(); Sfx.play('tap'); };
   $('#plist').onclick = ev => {
     const row = ev.target.closest('button.prow'); if (!row) return; const id = row.dataset.p, i = cfg.picked.indexOf(id);
@@ -243,6 +252,24 @@ function initHome() {
   $('#play').onclick = () => cfg.mode === 'online' ? Online.create() : startGame();
   $('#join').onclick = () => Online.openJoin();
   applyTheme(); renderPowers();
+  eggTaps();
+}
+
+/* Huevo de pascua: 5 toques seguidos al título desbloquean el tema secreto */
+function eggTaps() {
+  const h = document.querySelector('.intro h1'); if (!h) return;
+  let n = 0, t = 0;
+  h.addEventListener('click', () => {
+    clearTimeout(t); t = setTimeout(() => { n = 0; }, 1200);
+    h.classList.remove('wob'); void h.offsetWidth; h.classList.add('wob');
+    if (++n < 5) return;
+    n = 0;
+    const first = !cfg.secret;
+    cfg.secret = true; cfg.theme = 'midnight'; saveCfg();
+    $('#tiles').innerHTML = THEMES.filter(themeOK).map(t => `<button class="tile" data-t="${t.id}" style="${themeVars(t)}" aria-pressed="false">${svgOf(t.icons[0])}<span>${t.name}</span></button>`).join('');
+    applyTheme(); confetti(['#9B7BFF', '#FF4FA3', '#5B3DF5', '#D8CCFF', '#FFC83D']); Sfx.play('win');
+    toast(first ? 'Tema secreto desbloqueado: Medianoche' : 'Medianoche activado');
+  });
 }
 
 /* ====================== Estado del juego ====================== */
@@ -268,11 +295,11 @@ function startGame(rematch) {
   const G = {
     ai, diff: cfg.diff, ...(cfg.diff === 'hard' ? AI_LEVELS.hard : AI_LEVELS.easy), pool, th, size,
     players: [
-      { name: 'Jugador 1', score: 0, used: {}, shield: false, frozen: false },
-      { name: ai ? 'Máquina' : 'Jugador 2', score: 0, used: {}, shield: false, frozen: false, ai }
+      { name: 'Jugador 1', score: 0, used: {}, shield: false, frozen: false, short: false, last: null },
+      { name: ai ? 'Máquina' : 'Jugador 2', score: 0, used: {}, shield: false, frozen: false, short: false, last: null, ai }
     ],
     rematch: !!rematch, turn: 0, first: null, busy: false, magnet: false, hint: null, over: false, aiRun: false, mem: new Map(),
-    cards: deck.map((sym, i) => ({ id: i, sym, up: false, matched: false, owner: -1, el: null }))
+    cards: deck.map((sym, i) => ({ id: i, sym, up: false, matched: false, owner: -1, quar: -1, el: null }))
   };
   mountGame(G);
   maybeAI(G);
@@ -294,6 +321,17 @@ function fxMatch(G, cards, i) {
   pop.style.left = x + 'px'; pop.style.top = y + 'px';
   document.body.appendChild(pop); setTimeout(() => pop.remove(), 1100);
   const n = G.st.p[i].streak;
+  const mine = G.online ? i === G.me : (!G.ai || i === 0);
+  if (n === 6 && mine && !G.cards.every(x => x.matched)) {
+    document.querySelectorAll('.fxstreak').forEach(e => e.remove());
+    const s = document.createElement('div');
+    s.className = 'fxstreak gold'; s.setAttribute('role', 'status');
+    s.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 18 2 7l5.5 4.5L12 4l4.5 7.5L22 7l-1 11Zm1 2h16v2H4Z"/></svg><span>¡Racha perfecta!</span>`;
+    document.body.appendChild(s); setTimeout(() => s.remove(), 2200);
+    confetti(['#FFC83D', '#FFE08A', '#F59E0B', '#FFF3C4']); Sfx.play('win');
+    if (!cfg.crown) { cfg.crown = true; saveCfg(); setTimeout(() => toast('Corona desbloqueada: la verás en el menú'), 2300); }
+    return;
+  }
   if (n >= 2 && !G.over && !G.cards.every(x => x.matched)) {
     document.querySelectorAll('.fxstreak').forEach(e => e.remove());
     const s = document.createElement('div');
@@ -302,7 +340,7 @@ function fxMatch(G, cards, i) {
     document.body.appendChild(s); setTimeout(() => s.remove(), 1500);
   }
 }
-function confetti() {
+function confetti(colors) {
   if (reduceFx()) return;
   const cv = document.createElement('canvas'); cv.className = 'fxconf'; cv.setAttribute('aria-hidden', 'true');
   const dpr = Math.min(2, devicePixelRatio || 1), W = innerWidth, H = innerHeight;
@@ -310,6 +348,7 @@ function confetti() {
   const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
   const cs = getComputedStyle(document.documentElement);
   const cols = ['--a', '--b', '--c', '--d', '--e', '--p1', '--p2'].map(v => cs.getPropertyValue(v).trim()).filter(Boolean);
+  if (colors && colors.length) cols.splice(0, cols.length, ...colors);
   if (!cols.length) cols.push('#0A63D6', '#C2410C', '#4CAF63');
   const P = Array.from({ length: 70 }, () => ({
     x: W * (.2 + Math.random() * .6), y: -20 - Math.random() * H * .25, w: 6 + Math.random() * 6, h: 3 + Math.random() * 4,
@@ -339,7 +378,8 @@ function mountGame(G) {
   closeSheet(true);
   $('#status').classList.remove('low');
   Sfx.play('start');
-  document.documentElement.style.setProperty('--ui', th.ui);
+  ['a', 'b', 'c', 'd', 'e', 'ui'].forEach(k => document.documentElement.style.setProperty('--' + k, th[k]));   // también al invitado en línea
+  document.documentElement.dataset.tone = th.dark ? 'night' : '';
   // tablero
   board.innerHTML = '';
   board.className = 'board s' + (G.sizeKey || cfg.size);
@@ -356,8 +396,11 @@ function mountGame(G) {
   $('#dr').innerHTML = pool.map(p => `<button class="pbtn" data-p="${p}" aria-label="${POWERS[p].name}: ${pdesc(p, G)}">${pIcon(POWERS[p].icon)}<span class="pn">${POWERS[p].name}</span><small class="pd" aria-hidden="true">${pdesc(p, G)}</small></button>`).join('');
   $('#dr').onclick = ev => {
     const b = ev.target.closest('.pbtn'); if (!b || !S || !can(S, b.dataset.p)) return;
-    if (S.online) Online.power(b.dataset.p); else usePower(S, b.dataset.p);
+    const pid = b.dataset.p, u = S.online ? S.me : S.turn;
+    if (needOf(S, pid, u)) { startTarget(S, pid, u); return; }
+    if (S.online) Online.power(pid); else usePower(S, pid);
   };
+  $('#tcancel').onclick = cancelTarget;
   showView('game');
   sync();
   const names = pool.map(p => POWERS[p].name).join(', ');
@@ -365,16 +408,83 @@ function mountGame(G) {
 }
 
 const myTurn = G => G.online ? G.turn === G.me && G.status === 'playing' : !isAI(G, G.turn);
+
+/* ---- Poderes con objetivo, cuarentena y marcas ---- */
+const sfxOf = p => ({ swap: 'shuffle', compass: 'vision', mirror: 'shield', short: 'tick', quarantine: 'freeze' })[p] || p;
+const NEED = { swap: 2, compass: 1, quarantine: 1 };                       // cartas que hay que elegir
+const effOf = (G, pid, u) => pid === 'mirror' ? G.players[1 - u].last : pid;  // el Espejo copia el último poder del rival
+const needOf = (G, pid, u) => NEED[effOf(G, pid, u)] || 0;
+const freeCards = G => G.cards.filter(c => !c.matched && !c.up);
+const candidates = (G, eff) => eff === 'compass' ? freeCards(G) : freeCards(G).filter(c => c.quar < 0);
+/* Una carta aislada no se puede voltear, salvo que ya no queden otras para completar la jugada */
+const locked = (G, c) => c.quar >= 0 && !c.matched && !c.up && freeCards(G).filter(x => x.quar < 0).length >= (G.first ? 1 : 2);
+function avail(G, pid, u) {
+  const eff = effOf(G, pid, u); if (!eff) return false;
+  const n = NEED[eff] || 0; if (!n) return true;
+  return candidates(G, eff).length >= n;
+}
 function can(G, pid) {
-  if (G.over || G.busy || G.first !== null || G.magnet) return false;
+  if (G.over || G.busy || G.magnet || G.tg) return false;
+  if (G.first !== null && effOf(G, pid, G.online ? G.me : G.turn) !== 'magnet') return false;   // solo el Imán vale con una carta ya volteada
   if (G.online) {                                    // en línea: Barajar también vale en el turno del rival
     if (G.status !== 'playing' || G.players[G.me].used[pid]) return false;
-    return G.turn === G.me || pid === 'shuffle';
+    if (!(G.turn === G.me || pid === 'shuffle')) return false;
+    return avail(G, pid, G.me);
   }
-  return myTurn(G) && !G.players[G.turn].used[pid];
+  return myTurn(G) && !G.players[G.turn].used[pid] && avail(G, pid, G.turn);
+}
+function startTarget(G, pid, u) {
+  const eff = effOf(G, pid, u), need = NEED[eff];
+  G.tg = { pid, eff, need, got: [] }; sync();
+  toast(need === 2 ? 'Elige 2 cartas' : 'Elige una carta');
+}
+function cancelTarget() { if (S && S.tg) { S.tg = null; sync(); } }
+function pickTarget(G, c) {
+  const t = G.tg; if (!t || !candidates(G, t.eff).includes(c)) return;
+  const i = t.got.indexOf(c); if (i >= 0) t.got.splice(i, 1); else t.got.push(c);
+  Sfx.play('tap');
+  if (t.got.length < t.need) { sync(); return; }
+  const ids = t.got.map(x => x.id), pid = t.pid; G.tg = null; sync();
+  if (G.online) Online.power(pid, ids); else usePower(G, pid, ids);
+}
+const setSym = (G, c, sym) => { c.sym = sym; c.el.querySelector('.front').innerHTML = svgOf(G.th.icons[sym]); };
+/* Parpadeo de cartas (Intercambio: 2 elegidas + 2 señuelos, sin saber cuáles son) */
+async function blinkCards(cards) {
+  cards.forEach(c => c.el.classList.add('bl'));
+  await sleep(1300);
+  cards.forEach(c => c.el.classList.remove('bl'));
+  await sleep(250);
+}
+const relQuar = (G, p) => G.cards.forEach(c => { if (c.quar === p) c.quar = -1; });
+function armShort(G, c) {                            // Memoria corta: la primera carta se cierra sola
+  if (!G.players[G.turn].short) return;
+  setTimeout(() => {
+    if (G !== S || G.over || G.first !== c || G.busy || G.peeking > 0) return;
+    c.up = false; G.first = null; Sfx.play('miss'); toast('Memoria corta: la carta se cerró'); sync();
+  }, 1500);
 }
 
-function sync() {
+function sync() { syncMain(); paintExtras(); }
+function paintExtras() {
+  const G = S; if (!G) return;
+  const cand = G.tg ? candidates(G, G.tg.eff) : [];
+  G.cards.forEach(c => {
+    const el = c.el;
+    el.classList.toggle('qr', c.quar >= 0 && !c.matched);
+    el.classList.toggle('mk', !!G.marks && G.marks.includes(c) && !c.matched);
+    el.classList.toggle('tg', !!G.tg && G.tg.got.includes(c));
+    el.classList.toggle('pk', !!G.tg && cand.includes(c) && !G.tg.got.includes(c));
+    el.classList.toggle('shrt', c === G.first && !!G.players[G.turn].short);
+    if (c.quar >= 0 && !c.matched) el.setAttribute('aria-label', el.getAttribute('aria-label') + ' (aislada)');
+  });
+  G.players.forEach((p, i) => { if (p.short) { const bd = document.querySelector('#pl' + i + ' .bd'); if (bd) bd.insertAdjacentHTML('beforeend', '<span class="badge sm">Memoria corta</span>'); } });
+  const tc = $('#tcancel'); if (tc) tc.hidden = !G.tg;
+  if (G.tg) {
+    $('#dl').textContent = G.tg.need === 2 ? `${POWERS[G.tg.pid].name}: elige 2 cartas (${G.tg.got.length}/2)` : `${POWERS[G.tg.pid].name}: elige una carta`;
+    $('#dr').querySelectorAll('.pbtn').forEach(b => b.classList.toggle('armed', b.dataset.p === G.tg.pid));
+  }
+}
+function syncMain() {
   const G = S; if (!G) return;
   G.cards.forEach((c, i) => {
     const el = c.el;
@@ -419,6 +529,8 @@ function sync() {
 
 function onCard(c) {
   const G = S; if (!G || G.over || G.busy || !myTurn(G) || c.up || c.matched) return;
+  if (G.tg) { pickTarget(G, c); return; }
+  if (locked(G, c)) { toast('Carta aislada: se libera en el siguiente turno de quien la aisló'); return; }
   if (G.online) Online.flip(c); else pick(G, c);
 }
 
@@ -436,7 +548,7 @@ async function peek(G, cards, ms) {
 }
 
 async function pick(G, c) {
-  if (c.up || c.matched || G.over) return;
+  if (c.up || c.matched || G.over || locked(G, c)) return;
   c.up = true; see(G, c); hap(8); Sfx.play('flip');
   if (!G.first) {
     G.first = c;
@@ -448,13 +560,13 @@ async function pick(G, c) {
       await peek(G, [p], 1300); if (G !== S) return;
       see(G, p); G.busy = false;
     }
-    sync(); return;
+    sync(); armShort(G, c); return;
   }
   const a = G.first; G.busy = true; sync();
   await sleep(750); if (G !== S) return;
   if (a.sym === c.sym) {
     a.matched = c.matched = true; a.owner = c.owner = G.turn;
-    G.players[G.turn].score++; statHit(G, G.turn); fxMatch(G, [a, c], G.turn); G.mem.delete(a); G.mem.delete(c); G.first = null; G.hint = null;
+    G.players[G.turn].score++; statHit(G, G.turn); fxMatch(G, [a, c], G.turn); G.mem.delete(a); G.mem.delete(c); G.first = null; G.hint = null; G.marks = null;
     hap([12, 30, 12]); Sfx.play('match'); sync();
     await sleep(600); if (G !== S) return;
     G.busy = false;
@@ -469,9 +581,10 @@ async function pick(G, c) {
 }
 
 function endTurn(G) {
-  const next = 1 - G.turn, nx = G.players[next];
-  if (nx.frozen) { nx.frozen = false; toast(`${nx.name} pierde su turno`); }
-  else G.turn = next;
+  const was = G.turn, next = 1 - was, nx = G.players[next];
+  G.players[was].short = false; G.marks = null;      // Memoria corta dura un turno
+  if (nx.frozen) { nx.frozen = false; toast(`${nx.name} pierde su turno`); relQuar(G, was); G.players[was].shield = false; }
+  else { G.turn = next; relQuar(G, next); G.players[next].shield = false; }   // el Escudo dura 1 ronda: se acaba al empezar tu siguiente turno            // las cartas aisladas se liberan al empezar el turno de quien las aisló
   G.magnet = false; sync(); maybeAI(G);
   if (!G.ai && !G.online && !G.over && G.turn === next && cfg.pass !== false) showPass(G);
 }
@@ -489,41 +602,76 @@ function endPass(G, off) {
   G.passWait = false; G.busy = false; closeSheet(); Sfx.play('tap'); sync();
 }
 
-async function usePower(G, pid) {
-  const me = G.players[G.turn], op = G.players[1 - G.turn], P = POWERS[pid];
+async function usePower(G, pid, ids = []) {
+  const ui = G.turn, me = G.players[ui], op = G.players[1 - ui], P = POWERS[pid];
   me.used[pid] = true; hap(15); sync();
   if (pid !== 'shield' && op.shield) {
     op.shield = false; Sfx.play('block'); toast(`El escudo de ${op.name} bloqueó ${P.name}`); sync(); await sleep(900); return;
   }
-  Sfx.play(pid);
-  if (pid === 'vision') {
+  const eff = pid === 'mirror' ? op.last : pid;
+  me.last = eff;                                       // para el Espejo del rival
+  Sfx.play(sfxOf(pid));
+  if (pid === 'mirror') toast(`${me.name} copió ${POWERS[eff].name}`);
+  await runEffect(G, eff, ids, ui);
+  sync();
+}
+
+async function runEffect(G, eff, ids, ui) {
+  const me = G.players[ui], op = G.players[1 - ui];
+  const byId = id => G.cards.find(c => c.id === id);
+  if (eff === 'vision') {
     G.busy = true; sync(); toast(`${me.name} usó Visión`);
     const pk = shuf(G.cards.filter(c => !c.matched && !c.up)).slice(0, G.size.vision);
     await peek(G, pk, 1600); if (G !== S) return;
     pk.forEach(c => see(G, c)); G.busy = false;
-  } else if (pid === 'freeze') {
+  } else if (eff === 'freeze') {
     op.frozen = true; toast(`${op.name} perderá su próximo turno`);
-  } else if (pid === 'shuffle') {
+  } else if (eff === 'shuffle') {
     G.busy = true; sync(); toast(`${me.name} barajó las cartas`);
     await shuffleCards(G); if (G !== S) return;
     G.mem.clear(); G.busy = false;
-  } else if (pid === 'magnet') {
-    G.magnet = true; toast(isAI(G, G.turn) ? `${me.name} usó Imán` : 'Voltea una carta: verás su pareja');
-  } else if (pid === 'shield') {
+  } else if (eff === 'magnet') {
+    if (G.first) {                                     // ya hay una carta volteada: se ve su pareja al instante
+      G.busy = true; sync();
+      const p = G.cards.find(x => x !== G.first && x.sym === G.first.sym && !x.matched);
+      G.hint = p; toast(isAI(G, ui) ? `${me.name} usó Imán` : 'Esa es su pareja');
+      if (p) { await peek(G, [p], 1300); if (G !== S) return; see(G, p); }
+      G.busy = false;
+    } else { G.magnet = true; toast(isAI(G, ui) ? `${me.name} usó Imán` : 'Voltea una carta: verás su pareja'); }
+  } else if (eff === 'shield') {
     me.shield = true; toast(`${me.name} activó su Escudo`);
+  } else if (eff === 'swap') {
+    const [x, y] = ids.map(byId); if (!x || !y) return;
+    G.busy = true; sync(); toast(`${me.name} usó Intercambio`);
+    const dec = shuf(G.cards.filter(c => !c.matched && !c.up && c !== x && c !== y)).slice(0, 2);
+    const four = [x, y, ...dec];
+    await blinkCards(four); if (G !== S) return;
+    const sx = x.sym; setSym(G, x, y.sym); setSym(G, y, sx);
+    four.forEach(c => G.mem.delete(c));                // la máquina no sabe cuáles se cambiaron
+    G.busy = false;
+  } else if (eff === 'compass') {
+    const t = byId(ids[0]); if (!t) return;
+    const twin = G.cards.find(c => c !== t && c.sym === t.sym && !c.matched);
+    const dec = rnd(G.cards.filter(c => !c.matched && !c.up && c !== t && c !== twin) .concat(twin ? [] : []));
+    G.marks = shuf([twin, dec].filter(Boolean)); G.compassFor = t;
+    toast(isAI(G, ui) ? `${me.name} usó Brújula` : 'Brújula: una de las 2 cartas marcadas es su pareja');
+  } else if (eff === 'quarantine') {
+    const t = byId(ids[0]); if (!t) return;
+    t.quar = ui; toast(`${me.name} aisló una carta hasta su próximo turno`);
+  } else if (eff === 'short') {
+    op.short = true; toast(`${op.name} jugará con Memoria corta su próximo turno`);
   }
-  sync();
 }
 
 async function shuffleCards(G) {
-  const slots = G.cards.map((c, i) => i).filter(i => !G.cards[i].matched);
+  const slots = G.cards.map((c, i) => i).filter(i => !G.cards[i].matched && G.cards[i].quar < 0);
   const sh = shuf(slots.map(i => G.cards[i]));
   const before = new Map(G.cards.map(c => [c, c.el.getBoundingClientRect()]));
   slots.forEach((slot, k) => { G.cards[slot] = sh[k]; });
   G.cards.forEach(c => board.appendChild(c.el));
   const anims = [];
   G.cards.forEach(c => {
-    if (c.matched) return;
+    if (c.matched || !slots.some(i => G.cards[i] === c)) return;
     const a = before.get(c), b = c.el.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
     if (dx || dy) anims.push(c.el.animate([
       { transform: `translate(${dx}px,${dy}px) scale(.92)` },
@@ -541,20 +689,42 @@ function knownPair(G) {
   return null;
 }
 function aiPower(G) {
-  const me = G.players[G.turn], op = G.players[1 - G.turn];
-  const av = G.pool.filter(p => !me.used[p]); if (!av.length) return null;
+  const ui = G.turn, me = G.players[ui], op = G.players[1 - ui];
+  const av = G.pool.filter(p => !me.used[p] && avail(G, p, ui)); if (!av.length) return null;
   if (G.diff === 'easy') return Math.random() < .2 ? rnd(av) : null;
   const left = G.cards.filter(c => !c.matched).length / 2, kp = !!knownPair(G), opLeft = G.pool.some(p => !op.used[p]);
   if (av.includes('magnet') && !kp && Math.random() < .7) return 'magnet';
+  if (av.includes('compass') && !kp && left >= 3 && Math.random() < .6) return 'compass';
   if (av.includes('vision') && G.mem.size < 4 && left >= 4 && Math.random() < .6) return 'vision';
   if (av.includes('shuffle') && op.score - me.score >= 2 && Math.random() < .6) return 'shuffle';
   if (av.includes('freeze') && (kp || op.score >= me.score) && left <= 5 && Math.random() < .6) return 'freeze';
+  if (av.includes('quarantine') && !kp && aiQuarTarget(G) && Math.random() < .55) return 'quarantine';
+  if (av.includes('swap') && left >= 5 && op.score >= me.score && Math.random() < .35) return 'swap';
+  if (av.includes('short') && left >= 4 && Math.random() < .4) return 'short';
+  if (av.includes('mirror') && ['freeze', 'vision', 'magnet', 'swap', 'compass', 'short'].includes(op.last) && Math.random() < .6) return 'mirror';
   if (av.includes('shield') && opLeft && Math.random() < .3) return 'shield';
   return null;
 }
+/* Cuarentena de la máquina: protege una carta que conoce cuya pareja nadie ha visto */
+function aiQuarTarget(G) {
+  for (const [c, s] of G.mem) {
+    if (c.matched || c.up || c.quar >= 0) continue;
+    let twinKnown = false; for (const [d, s2] of G.mem) if (d !== c && s2 === s) twinKnown = true;
+    if (!twinKnown) return c;
+  }
+  return null;
+}
+function aiTargets(G, pid) {
+  const eff = effOf(G, pid, G.turn), cand = candidates(G, eff);
+  if (eff === 'swap') return shuf(cand).slice(0, 2).map(c => c.id);
+  if (eff === 'quarantine') { const t = aiQuarTarget(G) || rnd(cand); return t ? [t.id] : []; }
+  if (eff === 'compass') { const unk = cand.filter(c => !G.mem.has(c)); return [rnd(unk.length ? unk : cand).id]; }
+  return [];
+}
 function aiFirst(G) {
-  const avail = G.cards.filter(c => !c.matched && !c.up), kp = knownPair(G);
-  if (kp && Math.random() < G.use) return kp[0];
+  const avail = G.cards.filter(c => !c.matched && !c.up && !locked(G, c)), kp = knownPair(G);
+  if (G.compassFor && !G.compassFor.matched && !G.compassFor.up && G.marks && !locked(G, G.compassFor)) return G.compassFor;
+  if (kp && Math.random() < G.use && !locked(G, kp[0]) && !locked(G, kp[1])) return kp[0];
   const unk = avail.filter(c => !G.mem.has(c));
   return rnd(unk.length ? unk : avail);
 }
@@ -562,8 +732,13 @@ function aiSecond(G, a) {
   let m = null;
   for (const [c, s] of G.mem) if (c !== a && !c.matched && !c.up && s === a.sym) m = c;
   if (G.hint && G.hint !== a && !G.hint.matched && G.hint.sym === a.sym) m = G.hint;
+  if (G.marks && a === G.compassFor) {                       // Brújula: una de las 2 marcadas es la pareja
+    const mk = G.marks.filter(c => !c.matched && !c.up);
+    const yes = mk.find(c => G.mem.get(c) === a.sym), no = mk.find(c => G.mem.has(c) && G.mem.get(c) !== a.sym);
+    if (yes) return yes; if (no && mk.length === 2) return mk.find(c => c !== no); if (mk.length) return rnd(mk);
+  }
   if (m && Math.random() < G.use) return m;
-  const avail = G.cards.filter(c => !c.matched && !c.up && c !== a);
+  const avail = G.cards.filter(c => !c.matched && !c.up && c !== a && !locked(G, c));
   const unk = avail.filter(c => !G.mem.has(c) && c !== m);
   const pool = unk.length ? unk : avail.filter(c => c !== m);
   return rnd(pool.length ? pool : avail);
@@ -572,9 +747,13 @@ const tutWait = () => new Promise(r => { const t = () => (typeof Tutorial !== 'u
 async function aiStep(G) {
   await sleep(800); await tutWait(); if (G !== S || G.over) return;
   const pw = aiPower(G);
-  if (pw) { await usePower(G, pw); if (G !== S || G.over) return; await sleep(650); if (G !== S) return; }
+  if (pw) { await usePower(G, pw, aiTargets(G, pw)); if (G !== S || G.over) return; await sleep(650); if (G !== S) return; }
   await tutWait(); if (G !== S || G.over) return;
   const a = aiFirst(G); await pick(G, a); if (G !== S || G.over) return;
+  const me = G.players[G.turn];
+  if (G.pool.includes('magnet') && !me.used.magnet && !G.hint && ![...G.mem].some(([c, s]) => c !== a && s === a.sym) && Math.random() < (G.diff === 'hard' ? .6 : .2)) {
+    await usePower(G, 'magnet'); if (G !== S || G.over) return; await sleep(500); if (G !== S) return;
+  }
   await sleep(750); await tutWait(); if (G !== S) return;
   await pick(G, aiSecond(G, a));
 }

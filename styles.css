@@ -342,3 +342,44 @@ body.tutorial #toast{display:none!important}
 .rfx svg{width:24px;height:24px}
 @keyframes rfx{0%{opacity:0;transform:translateX(-50%) translateY(-8px) scale(.7)}12%{opacity:1;transform:translateX(-50%) scale(1.06)}20%{transform:translateX(-50%) scale(1)}85%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(6px)}}
 @media(prefers-reduced-motion:reduce){.rpop,.rfx{animation:none}.rfx{animation:rfxf 2.4s forwards}@keyframes rfxf{0%,85%{opacity:1}100%{opacity:0}}}
+
+/* Huevos de pascua */
+h1{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+h1.wob{animation:wob .35s var(--spring)}
+@keyframes wob{30%{transform:scale(.975) rotate(-.6deg)}65%{transform:scale(1.02) rotate(.4deg)}}
+.crown{display:block;width:30px;height:30px;margin:0 auto 6px;fill:#F5B301;filter:drop-shadow(0 4px 8px rgba(245,179,1,.45));animation:crownin .7s var(--spring)}
+.crown[hidden]{display:none}
+@media(min-width:960px){.crown{margin:0 0 8px}}
+@keyframes crownin{from{opacity:0;transform:translateY(-8px) scale(.6)}}
+.fxstreak.gold{display:flex;align-items:center;gap:8px;color:#8A5A00;background:linear-gradient(135deg,#FFF3C4,#FFD866);box-shadow:0 0 0 1px rgba(245,179,1,.5),0 14px 30px -10px rgba(245,179,1,.6)}
+.fxstreak.gold svg{color:#C98A00}
+/* Tema Medianoche: reversos oscuros con aro neón */
+[data-tone=night] .back{background:radial-gradient(circle at 28% 18%,rgba(155,123,255,.45),transparent 60%),linear-gradient(150deg,#2B2370,#0B0E24);box-shadow:0 1px 2px rgba(0,0,0,.2),0 8px 18px -8px rgba(91,61,245,.6)}
+[data-tone=night] .back::before{border-color:#FF4FA3;box-shadow:0 0 10px rgba(255,79,163,.7)}
+[data-tone=night] .back::after{background:#9B7BFF;box-shadow:0 0 8px #9B7BFF}
+
+/* Poderes nuevos: lista de 10, objetivos, cuarentena, marcas */
+.plist{grid-template-columns:1fr 1fr}
+.plist .prow{padding:10px 10px;gap:9px;align-items:flex-start}
+.plist .prow .pi{width:34px;height:34px}
+.plist .prow .pi svg{width:20px;height:20px}
+.plist .prow small{font-size:11.5px;line-height:1.3}
+.plist .prow .ck{width:20px;height:20px}
+.plist.compact .prow{align-items:center}
+.plist.compact .prow small{display:none}
+@media(min-width:960px){.plist{grid-template-columns:1fr 1fr}.plist.compact{grid-template-columns:repeat(5,1fr)}}
+.badge.sm{background:#FEF3C7;color:#92400E}
+.tcancel{display:block;margin:8px auto 0;padding:8px 18px;border:0;border-radius:999px;background:var(--surface2);color:var(--text);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.tcancel[hidden]{display:none}
+.card.qr .back{filter:saturate(.3) brightness(.97)}
+.card.qr::after{content:"";position:absolute;inset:0;margin:auto;width:36%;aspect-ratio:1;border-radius:50%;pointer-events:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231D1D1F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='11' width='14' height='9' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") center/58% no-repeat;box-shadow:0 0 0 2px #8E8E93,0 6px 14px -6px rgba(0,0,0,.4)}
+.card.mk .back{box-shadow:0 0 0 3px #F59E0B,0 0 18px rgba(245,158,11,.55);animation:mkp 1.1s ease-in-out infinite}
+@keyframes mkp{50%{box-shadow:0 0 0 5px #F59E0B,0 0 26px rgba(245,158,11,.8)}}
+.card.pk .back{box-shadow:0 0 0 2px color-mix(in srgb,var(--ui) 60%,transparent),0 8px 18px -8px rgba(0,0,0,.22)}
+.card.tg .back{box-shadow:0 0 0 4px var(--ui),0 10px 22px -8px var(--ui);transform:scale(.95)}
+.card.bl{animation:bl .55s ease-in-out 2}
+.card.bl .back{box-shadow:0 0 0 3px var(--d),0 0 20px var(--d)}
+@keyframes bl{0%,100%{transform:none}25%{transform:rotate(-7deg) scale(1.07)}50%{transform:rotate(6deg) scale(1.04)}75%{transform:rotate(-3deg)}}
+.card.shrt .front{animation:shrt 1.5s linear forwards}
+@keyframes shrt{from{box-shadow:inset 0 0 0 4px #F59E0B;opacity:1}to{box-shadow:inset 0 0 0 4px #F59E0B;opacity:.3}}
+@media(prefers-reduced-motion:reduce){.card.mk .back,.card.bl,.card.shrt .front{animation:none}}

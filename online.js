@@ -86,6 +86,7 @@ const Online = (() => {
       turn: g.turn || 0, scores: fill(g.scores, 2, 0),
       used: { p0: { ...(g.used && g.used.p0) }, p1: { ...(g.used && g.used.p1) } },
       frozen: fill(g.frozen, 2, false), shield: fill(g.shield, 2, false),
+      quar: fill(g.quar, n, -1), short: fill(g.short, 2, false), last: fill(g.last, 2, 0),
       turnAt: g.turnAt || 0, ev: g.ev || null
     };
   }
@@ -96,6 +97,7 @@ const Online = (() => {
     return {
       round, status: 'playing', deck, owner: deck.map(() => -1), turn: (round - 1) % 2,
       scores: [0, 0], frozen: [false, false], shield: [false, false], turnAt: fb.now(),
+      quar: deck.map(() => -1), short: [false, false], last: [0, 0],
       ev: { id: (evId || 0) + 1, kind: 'round', by: 0 }
     };
   }
@@ -245,9 +247,9 @@ const Online = (() => {
     G = {
       online: true, me: seat, round: g.round, rematch: g.round > 1, status: g.status, th,
       size: SIZES[r.config.size] || SIZES['16'], sizeKey: r.config.size, pool: r.config.pool || [],
-      players: [0, 1].map(i => ({ name: i === seat ? 'Tú' : 'Rival', score: 0, used: {}, shield: false, frozen: false })),
+      players: [0, 1].map(i => ({ name: i === seat ? 'Tú' : 'Rival', score: 0, used: {}, shield: false, frozen: false, short: false, last: null })),
       turn: g.turn, first: null, busy: false, magnet: false, over: false, pending: false, peeking: 0,
-      cards: g.deck.map((sym, i) => ({ id: i, sym, up: false, matched: false, owner: -1, el: null }))
+      cards: g.deck.map((sym, i) => ({ id: i, sym, up: false, matched: false, owner: -1, quar: -1, el: null }))
     };
     lastEv = g.ev ? g.ev.id : 0;                      // no repetir avisos viejos
     setupReactions();
@@ -269,9 +271,11 @@ const Online = (() => {
     const fresh = [];
     g.owner.forEach((o, i) => { const c = G.cards[i]; if (o >= 0 && !c.matched) fresh.push(c); c.owner = o; c.matched = o >= 0; c.up = g.open.includes(i); });
     G.turn = g.turn; G.status = g.status;
+    g.quar.forEach((q, i) => { if (G.cards[i]) G.cards[i].quar = q; });
+    if (g.turn !== seat) G.marks = null;
     [0, 1].forEach(i => {
       const p = G.players[i], k = 'p' + i, pres = room.players && room.players[k];
-      p.score = g.scores[i]; p.used = g.used[k]; p.frozen = !!g.frozen[i]; p.shield = !!g.shield[i];
+      p.score = g.scores[i]; p.used = g.used[k]; p.frozen = !!g.frozen[i]; p.shield = !!g.shield[i]; p.short = !!g.short[i]; p.last = g.last[i] || null;
       p.offline = !(pres && pres.online);
     });
     const rivalOnline = !G.players[1 - seat].offline;
@@ -279,7 +283,7 @@ const Online = (() => {
     rivalWasOnline = rivalOnline;
     if (prev && prev.round === g.round) {
       if (g.turn !== seat && g.open.length > prev.open.length) Sfx.play('flip');          // volteó el rival
-      if (g.scores[0] + g.scores[1] > prev.scores[0] + prev.scores[1]) { Sfx.play('match'); [0, 1].forEach(i => { for (let k = g.scores[i] - prev.scores[i]; k > 0; k--) statHit(G, i); if (g.scores[i] > prev.scores[i]) fxMatch(G, fresh.length ? fresh : [], i); }); }
+      if (g.scores[0] + g.scores[1] > prev.scores[0] + prev.scores[1]) { Sfx.play('match'); G.marks = null; [0, 1].forEach(i => { for (let k = g.scores[i] - prev.scores[i]; k > 0; k--) statHit(G, i); if (g.scores[i] > prev.scores[i]) fxMatch(G, fresh.length ? fresh : [], i); }); }
       else if (prev.open.length === 2 && g.open.length === 0) { Sfx.play('miss'); statMiss(G, prev.turn); }
     }
     prev = { round: g.round, open: g.open.slice(), scores: g.scores.slice(), turn: g.turn };
@@ -287,6 +291,7 @@ const Online = (() => {
     G.busy = g.open.length === 2 || G.pending || G.peeking > 0;
     if (g.turn !== seat) G.magnet = false;
     handleEvent(g.ev);
+    scheduleShort(g);
     schedule(g);
     scheduleClock(g);
     if (g.status === 'over' && !G.over) finish(G); else sync();
@@ -295,19 +300,28 @@ const Online = (() => {
   function handleEvent(ev) {
     if (!ev || ev.id === lastEv) return;
     lastEv = ev.id;
-    const mine = ev.by === seat, P = POWERS[ev.pid] || {};
-    Sfx.play(ev.kind === 'power' ? ev.pid : ev.kind === 'blocked' ? 'block' : ev.kind === 'timeout' ? 'timeout' : ev.kind === 'skip' ? 'freeze' : '');
+    const mine = ev.by === seat, P = POWERS[ev.pid] || {}, eff = ev.eff || ev.pid;
+    Sfx.play(ev.kind === 'power' ? sfxOf(ev.pid) : ev.kind === 'blocked' ? 'block' : ev.kind === 'timeout' ? 'timeout' : ev.kind === 'skip' ? 'freeze' : ev.kind === 'close' ? 'miss' : '');
     if (ev.kind === 'power') {
-      if (ev.pid === 'freeze') toast(mine ? 'Tu rival perderá su próximo turno' : 'Te congelaron: pierdes tu próximo turno');
-      else if (ev.pid === 'shield') toast(mine ? 'Activaste tu Escudo' : 'Tu rival activó su Escudo');
-      else if (ev.pid === 'shuffle') { toast(mine ? 'Barajaste las cartas' : 'Tu rival barajó las cartas'); shuffleFx(); }
-      else if (!mine) toast(`Tu rival usó ${P.name}`);
+      if (ev.pid === 'mirror') toast(mine ? `Copiaste ${POWERS[eff].name}` : `Tu rival copió ${POWERS[eff].name}`);
+      if (eff === 'freeze') toast(mine ? 'Tu rival perderá su próximo turno' : 'Te congelaron: pierdes tu próximo turno');
+      else if (eff === 'shield') toast(mine ? 'Activaste tu Escudo (dura 1 ronda)' : 'Tu rival activó su Escudo');
+      else if (eff === 'shuffle') { toast(mine ? 'Barajaste las cartas' : 'Tu rival barajó las cartas'); shuffleFx(); }
+      else if (eff === 'swap') {
+        toast(mine ? 'Usaste Intercambio' : 'Tu rival usó Intercambio: ¡2 de las 4 cartas que parpadean se cambiaron!');
+        if (ev.cells && G) { const cs = ev.cells.map(i => G.cards[i]).filter(Boolean); G.peeking++; G.busy = true; blinkCards(cs).then(() => { if (G) { G.peeking--; apply(); } }); }
+      }
+      else if (eff === 'quarantine') toast(mine ? 'Aislaste una carta hasta tu próximo turno' : 'Tu rival aisló una carta hasta su próximo turno');
+      else if (eff === 'short') toast(mine ? 'Tu rival jugará con Memoria corta' : 'Memoria corta: en tu turno la primera carta se cierra a los 1,5 s');
+      else if (!mine && ev.pid !== 'mirror') toast(`Tu rival usó ${P.name}`);
     } else if (ev.kind === 'blocked') {
       toast(mine ? `El escudo de tu rival bloqueó ${P.name}` : `Tu escudo bloqueó ${P.name}`);
     } else if (ev.kind === 'timeout') {
       toast(mine ? 'Se acabó tu tiempo: turno de tu rival' : 'A tu rival se le acabó el tiempo');
     } else if (ev.kind === 'skip') {
       toast(mine ? 'Estás congelado: pierdes este turno' : 'Tu rival pierde su turno');
+    } else if (ev.kind === 'close') {
+      toast(mine ? 'Memoria corta: tu carta se cerró' : 'La carta de tu rival se cerró sola');
     }
   }
 
@@ -329,6 +343,40 @@ const Online = (() => {
     timerKey = key; clearTimeout(timer);
     timer = setTimeout(resolve, g.turn === seat ? 1000 : 4500);
   }
+  /* Cambio de turno: Memoria corta dura un turno; Escudo y Cuarentena se acaban al empezar el siguiente turno de su dueño */
+  function passTurn(g, was) {
+    const nx = 1 - was; let start, skipped = false;
+    g.short[was] = false;
+    if (g.frozen[nx]) { g.frozen[nx] = false; start = was; skipped = true; } else { g.turn = nx; start = nx; }
+    g.quar = g.quar.map(q => q === start ? -1 : q);
+    g.shield[start] = false;
+    return skipped;
+  }
+
+  /* Memoria corta: la primera carta de quien tiene el efecto se cierra sola */
+  let shortTimer = null, shortKey = '';
+  function scheduleShort(g) {
+    if (g.status !== 'playing' || g.open.length !== 1 || !g.short[g.turn]) { clearTimeout(shortTimer); shortKey = ''; return; }
+    const key = `${g.round}:${g.open[0]}:${g.turnAt}`;
+    if (key === shortKey) return;
+    shortKey = key; clearTimeout(shortTimer);
+    const idx = g.open[0], turn = g.turn;
+    shortTimer = setTimeout(() => closeFirst(idx, turn), turn === seat ? 1500 : 3500);   // el rival lo cierra más tarde por si el otro se desconecta
+  }
+  async function closeFirst(idx, turn) {
+    if (!code) return;
+    if (G && (G.peeking > 0 || G.pending)) { shortTimer = setTimeout(() => closeFirst(idx, turn), 300); return; }
+    try {
+      await fb.tx(gp(), cur => {
+        if (!cur) return cur;
+        const g = norm(cur);
+        if (g.status !== 'playing' || g.open.length !== 1 || g.open[0] !== idx || g.turn !== turn || !g.short[turn]) return;
+        g.open = []; g.ev = { id: (g.ev ? g.ev.id : 0) + 1, kind: 'close', by: turn };
+        return g;
+      });
+    } catch (e) { shortKey = ''; }
+  }
+
   async function resolve() {
     if (!code) return;
     try {
@@ -341,9 +389,8 @@ const Online = (() => {
           g.owner[a] = g.owner[b] = g.turn; g.scores[g.turn]++;
           if (g.owner.every(o => o >= 0)) g.status = 'over';
         } else {
-          const nx = 1 - g.turn;
-          if (g.frozen[nx]) { g.frozen[nx] = false; g.ev = { id: (g.ev ? g.ev.id : 0) + 1, kind: 'skip', by: nx }; }
-          else g.turn = nx;
+          const was = g.turn, nx = 1 - was;
+          if (passTurn(g, was)) g.ev = { id: (g.ev ? g.ev.id : 0) + 1, kind: 'skip', by: nx };
         }
         g.open = []; g.openedAt = 0; g.turnAt = fb.now();   // nueva jugada: reloj desde cero
         return g;
@@ -370,7 +417,7 @@ const Online = (() => {
         if (g.status !== 'playing' || g.turnAt !== turnAt || g.open.length === 2 || fb.now() < g.turnAt + TURN_MS - 250) return;
         const was = g.turn, nx = 1 - was;
         g.open = []; g.openedAt = 0;
-        if (g.frozen[nx]) g.frozen[nx] = false; else g.turn = nx;   // si el rival estaba congelado, pierde ese turno
+        passTurn(g, was);                                            // si el rival estaba congelado, pierde ese turno
         g.turnAt = fb.now();
         g.ev = { id: (g.ev ? g.ev.id : 0) + 1, kind: 'timeout', by: was };
         return g;
@@ -406,6 +453,8 @@ const Online = (() => {
         if (!cur) return cur;
         const g = norm(cur);
         if (g.status !== 'playing' || g.turn !== seat || g.open.length >= 2 || g.owner[idx] >= 0 || g.open.includes(idx)) return;
+        const freeQ = g.owner.filter((o, k) => o < 0 && !g.open.includes(k) && g.quar[k] < 0).length;
+        if (g.quar[idx] >= 0 && freeQ >= (g.open.length ? 1 : 2)) return;       // carta aislada
         g.open.push(idx);
         if (g.open.length === 2) g.openedAt = Date.now();
         return g;
@@ -421,7 +470,7 @@ const Online = (() => {
     apply();
   }
 
-  async function power(pid) {
+  async function power(pid, targets = []) {
     if (!G || G.pending) return;
     G.pending = true; G.busy = true; sync(); hap(15);
     let res = null;
@@ -429,19 +478,35 @@ const Online = (() => {
       res = await fb.tx(gp(), cur => {
         if (!cur) return cur;
         const g = norm(cur), me = 'p' + seat, op = 1 - seat;
-        if (g.status !== 'playing' || g.open.length || g.used[me][pid]) return;
+        const eff = pid === 'mirror' ? g.last[op] : pid;
+        if (g.status !== 'playing' || g.used[me][pid] || !eff) return;
+        if (g.open.length && !(eff === 'magnet' && g.open.length === 1 && g.turn === seat)) return;   // con una carta volteada solo vale el Imán
         if (g.turn !== seat && pid !== 'shuffle') return;     // solo Barajar se puede usar en el turno del rival
+        const need = NEED[eff] || 0;
+        if (need) {
+          if (targets.length !== need || new Set(targets).size !== need) return;
+          if (!targets.every(i => Number.isInteger(i) && i >= 0 && i < g.deck.length && g.owner[i] < 0 && !g.open.includes(i) && (eff === 'compass' || g.quar[i] < 0))) return;
+        }
         g.used[me][pid] = true;
         const id = (g.ev ? g.ev.id : 0) + 1;
         if (pid !== 'shield' && g.shield[op]) { g.shield[op] = false; g.ev = { id, kind: 'blocked', by: seat, pid }; return g; }
-        if (pid === 'freeze') g.frozen[op] = true;
-        if (pid === 'shield') g.shield[seat] = true;
-        if (pid === 'shuffle') {
-          const free = g.owner.map((o, i) => o < 0 ? i : -1).filter(i => i >= 0);
+        const ev = { id, kind: 'power', by: seat, pid, eff };
+        if (eff === 'freeze') g.frozen[op] = true;
+        if (eff === 'shield') g.shield[seat] = true;
+        if (eff === 'short') g.short[op] = true;
+        if (eff === 'quarantine') g.quar[targets[0]] = seat;
+        if (eff === 'shuffle') {
+          const free = g.owner.map((o, i) => (o < 0 && g.quar[i] < 0) ? i : -1).filter(i => i >= 0);
           const syms = shuf(free.map(i => g.deck[i]));
           free.forEach((i, k) => { g.deck[i] = syms[k]; });
         }
-        g.ev = { id, kind: 'power', by: seat, pid };
+        if (eff === 'swap') {
+          const [x, y] = targets; [g.deck[x], g.deck[y]] = [g.deck[y], g.deck[x]];
+          const dec = shuf(g.owner.map((o, i) => (o < 0 && !targets.includes(i)) ? i : -1).filter(i => i >= 0)).slice(0, 2);
+          ev.cells = [x, y, ...dec].sort((p, q) => p - q);   // ordenadas: no delatan cuáles son las elegidas
+        }
+        g.last[seat] = eff;
+        g.ev = ev;
         return g;
       });
     } catch (e) { toast('Sin conexión: intenta de nuevo'); }
@@ -450,11 +515,24 @@ const Online = (() => {
       toast('Tarde: tu rival ya volteó una carta. No gastaste el poder');
     const g = res && res.committed ? norm(res.value) : null;
     if (g && g.ev && g.ev.kind === 'power' && g.ev.by === seat) {
-      if (pid === 'vision') {
+      const eff = g.ev.eff || pid;
+      if (eff === 'vision') {
         toast('Usaste Visión');
         const pk = shuf(G.cards.filter(c => !c.matched && !c.up)).slice(0, G.size.vision);
         await peekLocal(pk, 1600);
-      } else if (pid === 'magnet') { G.magnet = true; toast('Voltea una carta: verás su pareja'); }
+      } else if (eff === 'magnet') {
+        const first = g.open.length === 1 ? G.cards[g.open[0]] : null;
+        if (first) {                                     // con una carta ya volteada: se ve su pareja al instante
+          const p = G.cards.find(x => x !== first && x.sym === first.sym && !x.matched);
+          toast('Esa es su pareja'); if (p) await peekLocal([p], 1300);
+        } else { G.magnet = true; toast('Voltea una carta: verás su pareja'); }
+      } else if (eff === 'compass') {
+        const t = G.cards[targets[0]];
+        const twin = G.cards.find(c => c !== t && c.sym === t.sym && !c.matched);
+        const dec = rnd(G.cards.filter(c => !c.matched && !c.up && c !== t && c !== twin));
+        G.marks = shuf([twin, dec].filter(Boolean)); G.compassFor = t;
+        toast('Brújula: una de las 2 cartas marcadas es su pareja');
+      }
     }
     apply();
   }
