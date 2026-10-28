@@ -473,6 +473,20 @@ function endTurn(G) {
   if (nx.frozen) { nx.frozen = false; toast(`${nx.name} pierde su turno`); }
   else G.turn = next;
   G.magnet = false; sync(); maybeAI(G);
+  if (!G.ai && !G.online && !G.over && G.turn === next && cfg.pass !== false) showPass(G);
+}
+
+/* Modo 2 jugadores en un solo celular: aviso al cambiar de turno */
+function showPass(G) {
+  G.passWait = true; G.busy = true; sync();
+  const p = G.players[G.turn];
+  openSheet(`<div class="pass"><span class="pdot o${G.turn}"></span><h2>Turno de ${p.name}</h2><p class="sub2">Pásale el celular.</p>
+    <div class="acts"><button class="btn" data-act="pass">Listo</button></div>
+    <button class="linkbtn" data-act="passoff">No volver a mostrar este aviso</button></div>`, true);
+}
+function endPass(G, off) {
+  if (off) { cfg.pass = false; saveCfg(); }
+  G.passWait = false; G.busy = false; closeSheet(); Sfx.play('tap'); sync();
 }
 
 async function usePower(G, pid) {
@@ -584,6 +598,8 @@ scrim.addEventListener('click', ev => {
   if (act) {
     const k = act.dataset.act;
     if (k === 'tutorial') { closeSheet(); Sfx.play('tap'); setTimeout(() => Tutorial.start(S), 200); return; }
+    if (k === 'pass' || k === 'passoff') { if (S && S.passWait) endPass(S, k === 'passoff'); return; }
+    if (k === 'close' && S && S.passWait) { showPass(S); return; }
     if (k === 'rematch') { if (S && S.online) { closeSheet(); Online.rematch(); } else startGame(true); }
     else if (k === 'menu' || k === 'leave') { if (S && S.online) Online.leave(); S = null; closeSheet(); showView('home'); }
     else closeSheet();
