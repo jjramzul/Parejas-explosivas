@@ -207,7 +207,8 @@ const Online = (() => {
       const c = G.cards[i]; if (!c || c.sym === sym) return;
       c.sym = sym; c.el.querySelector('.front').innerHTML = svgOf(G.th.icons[sym]);
     });
-    g.owner.forEach((o, i) => { const c = G.cards[i]; c.owner = o; c.matched = o >= 0; c.up = g.open.includes(i); });
+    const fresh = [];
+    g.owner.forEach((o, i) => { const c = G.cards[i]; if (o >= 0 && !c.matched) fresh.push(c); c.owner = o; c.matched = o >= 0; c.up = g.open.includes(i); });
     G.turn = g.turn; G.status = g.status;
     [0, 1].forEach(i => {
       const p = G.players[i], k = 'p' + i, pres = room.players && room.players[k];
@@ -219,7 +220,7 @@ const Online = (() => {
     rivalWasOnline = rivalOnline;
     if (prev && prev.round === g.round) {
       if (g.turn !== seat && g.open.length > prev.open.length) Sfx.play('flip');          // volteó el rival
-      if (g.scores[0] + g.scores[1] > prev.scores[0] + prev.scores[1]) { Sfx.play('match'); [0, 1].forEach(i => { for (let k = g.scores[i] - prev.scores[i]; k > 0; k--) statHit(G, i); }); }
+      if (g.scores[0] + g.scores[1] > prev.scores[0] + prev.scores[1]) { Sfx.play('match'); [0, 1].forEach(i => { for (let k = g.scores[i] - prev.scores[i]; k > 0; k--) statHit(G, i); if (g.scores[i] > prev.scores[i]) fxMatch(G, fresh.length ? fresh : [], i); }); }
       else if (prev.open.length === 2 && g.open.length === 0) { Sfx.play('miss'); statMiss(G, prev.turn); }
     }
     prev = { round: g.round, open: g.open.slice(), scores: g.scores.slice(), turn: g.turn };

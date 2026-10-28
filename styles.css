@@ -312,3 +312,13 @@ body.tutorial #toast{display:none!important}
 .series.dur{margin-bottom:0}
 .sheet .stats+.series+.series{font-weight:600;color:var(--text)}
 .sheet .acts{margin-top:18px}
+
+/* Feedback de aciertos */
+.fxpop{position:fixed;z-index:50;transform:translate(-50%,0);font-weight:700;font-size:26px;letter-spacing:-.02em;pointer-events:none;color:var(--p1);text-shadow:0 2px 12px rgba(255,255,255,.9);animation:fxup 1s var(--ease) forwards}
+.fxpop.p1{color:var(--p2)}
+@keyframes fxup{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}18%{opacity:1;transform:translate(-50%,-6px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-58px) scale(1)}}
+.fxstreak{position:fixed;z-index:55;left:50%;top:max(84px,calc(env(safe-area-inset-top) + 76px));transform:translateX(-50%);padding:9px 18px;border-radius:999px;background:#fff;color:var(--p1);font-weight:700;font-size:17px;letter-spacing:-.01em;box-shadow:0 0 0 1px var(--line),0 14px 30px -12px rgba(0,0,0,.3);pointer-events:none;white-space:nowrap;animation:fxstreak 1.5s var(--spring) forwards}
+.fxstreak.p1{color:var(--p2)}
+@keyframes fxstreak{0%{opacity:0;transform:translateX(-50%) translateY(-14px) scale(.8)}14%{opacity:1;transform:translateX(-50%) scale(1.06)}22%{transform:translateX(-50%) scale(1)}82%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-8px)}}
+.fxconf{position:fixed;inset:0;width:100vw;height:100vh;z-index:70;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.fxpop{animation:fxfade 1s forwards}.fxstreak{animation:fxfade 1.5s forwards}@keyframes fxfade{0%,80%{opacity:1}100%{opacity:0}}}

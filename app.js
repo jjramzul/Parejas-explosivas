@@ -282,6 +282,53 @@ function startGame(rematch) {
 let SER = { w: [0, 0], t: 0, n: 0 };
 const newStats = () => ({ t0: Date.now(), p: [0, 1].map(() => ({ tries: 0, hits: 0, streak: 0, best: 0 })) });
 function statHit(G, i) { const s = G.st.p[i]; s.tries++; s.hits++; s.streak++; s.best = Math.max(s.best, s.streak); }
+
+/* Feedback visual: "+1" flotante, aviso de racha y confeti */
+const reduceFx = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function fxMatch(G, cards, i) {
+  const els = cards.map(c => c.el).filter(Boolean); if (!els.length) return;
+  const rs = els.map(e => e.getBoundingClientRect());
+  const x = rs.reduce((s, r) => s + r.left + r.width / 2, 0) / rs.length, y = Math.min(...rs.map(r => r.top)) + 10;
+  const pop = document.createElement('div');
+  pop.className = 'fxpop p' + i; pop.textContent = '+1';
+  pop.style.left = x + 'px'; pop.style.top = y + 'px';
+  document.body.appendChild(pop); setTimeout(() => pop.remove(), 1100);
+  const n = G.st.p[i].streak;
+  if (n >= 2 && !G.over && !G.cards.every(x => x.matched)) {
+    document.querySelectorAll('.fxstreak').forEach(e => e.remove());
+    const s = document.createElement('div');
+    s.className = 'fxstreak p' + i; s.setAttribute('role', 'status');
+    s.textContent = `¡Racha x${n}!`;
+    document.body.appendChild(s); setTimeout(() => s.remove(), 1500);
+  }
+}
+function confetti() {
+  if (reduceFx()) return;
+  const cv = document.createElement('canvas'); cv.className = 'fxconf'; cv.setAttribute('aria-hidden', 'true');
+  const dpr = Math.min(2, devicePixelRatio || 1), W = innerWidth, H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr; document.body.appendChild(cv);
+  const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+  const cs = getComputedStyle(document.documentElement);
+  const cols = ['--a', '--b', '--c', '--d', '--e', '--p1', '--p2'].map(v => cs.getPropertyValue(v).trim()).filter(Boolean);
+  if (!cols.length) cols.push('#0A63D6', '#C2410C', '#4CAF63');
+  const P = Array.from({ length: 70 }, () => ({
+    x: W * (.2 + Math.random() * .6), y: -20 - Math.random() * H * .25, w: 6 + Math.random() * 6, h: 3 + Math.random() * 4,
+    vx: (Math.random() - .5) * 2.2, vy: 1.6 + Math.random() * 2.2, r: Math.random() * 6.28, vr: (Math.random() - .5) * .22,
+    c: cols[Math.floor(Math.random() * cols.length)], ph: Math.random() * 6.28
+  }));
+  const t0 = performance.now();
+  (function f(t) {
+    const k = (t - t0) / 2600; ctx.clearRect(0, 0, W, H);
+    if (k >= 1) { cv.remove(); return; }
+    ctx.globalAlpha = k < .7 ? 1 : 1 - (k - .7) / .3;
+    P.forEach(p => {
+      p.x += p.vx + Math.sin(t / 400 + p.ph) * .6; p.y += p.vy; p.r += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+    });
+    requestAnimationFrame(f);
+  })(t0);
+}
 function statMiss(G, i) { const s = G.st.p[i]; s.tries++; s.streak = 0; }
 
 /* Monta la partida en pantalla (lo usa también el modo en línea) */
@@ -407,7 +454,7 @@ async function pick(G, c) {
   await sleep(750); if (G !== S) return;
   if (a.sym === c.sym) {
     a.matched = c.matched = true; a.owner = c.owner = G.turn;
-    G.players[G.turn].score++; statHit(G, G.turn); G.mem.delete(a); G.mem.delete(c); G.first = null; G.hint = null;
+    G.players[G.turn].score++; statHit(G, G.turn); fxMatch(G, [a, c], G.turn); G.mem.delete(a); G.mem.delete(c); G.first = null; G.hint = null;
     hap([12, 30, 12]); Sfx.play('match'); sync();
     await sleep(600); if (G !== S) return;
     G.busy = false;
@@ -550,6 +597,7 @@ async function finish(G) {
   G.over = true; sync(); hap([20, 40, 20]);
   await sleep(700); if (G !== S) return;
   const [p0, p1] = G.players, tie = p0.score === p1.score, w = p0.score > p1.score ? 0 : 1;
+  if (!tie && (G.online ? w === G.me : !G.ai || w === 0)) confetti();
   Sfx.play(tie ? 'tie' : (G.online ? w === G.me : !G.ai || w === 0) ? 'win' : 'lose');
   const title = tie ? 'Empate' : G.online ? (w === G.me ? '¡Ganaste!' : 'Ganó tu rival') : (G.ai ? (w === 0 ? '¡Ganaste!' : 'Ganó la máquina') : `Ganó ${G.players[w].name}`);
   const sub = tie ? 'Misma cantidad de parejas.' : `${G.players[w].score} parejas contra ${G.players[1 - w].score}.`;
