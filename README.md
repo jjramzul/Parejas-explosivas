@@ -15,7 +15,7 @@ Juego de memoria con poderes: 2 jugadores en el mismo dispositivo, contra la má
 | `database.rules.json` | Reglas de seguridad de Realtime Database |
 | `firebase.json`, `.firebaserc` | Configuración para publicar con Firebase Hosting |
 
-## Probar en tu computador
+## Probar
 
 - Local y contra la máquina: abre `index.html` directamente.
 - En línea: ábrelo con **Live Server** de VS Code (`http://127.0.0.1:5500`) y usa dos **pestañas**: cada pestaña es un jugador distinto. Crea la sala en una y únete con el código en la otra.
@@ -37,8 +37,9 @@ Queda en: https://parejas-explosivas.web.app
 - La sala vive en `rooms/CÓDIGO` de Realtime Database; ambos escuchan ese nodo.
 - Cada jugada se escribe con una **transacción**, así dos toques al tiempo no rompen el estado.
 - Visión e Imán solo se muestran en la pantalla de quien los usa; Congelar, Escudo y Barajar cambian el estado compartido.
+- **Tiempo por jugada: 15 s** (`TURN_MS` en `online.js`). Se mide con la hora del servidor de Firebase, así ambos ven el mismo reloj. Si se acaba, el turno pasa al rival; si el jugador de turno se desconecta, el rival cierra el turno 2 s después.
+- **Barajar en el turno del rival:** se puede usar mientras el rival no haya volteado ninguna carta. Si ambos tocan casi al tiempo, Firebase acepta solo lo primero: si el rival volteó antes, la barajada se rechaza y el poder no se gasta.
 - La presencia usa `onDisconnect`: si tu rival se cae, verás "Desconectado".
 - Las reglas solo dejan escribir en una sala a sus dos jugadores.
 
 Limitación conocida: el orden de las cartas está en la base de datos, así que alguien con las herramientas de desarrollador podría verlo. Evitarlo requiere Cloud Functions (plan Blaze).
-# Parejas-explosivas
