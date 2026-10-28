@@ -167,6 +167,63 @@ const Online = (() => {
   }
 
   /* ---------- Escuchar la sala ---------- */
+
+  /* ====================== Reacciones rápidas ====================== */
+  const S_ = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+  const REACTS = [
+    { k: 'bien',   t: '¡Bien!',  svg: `<svg ${S_}><path d="M7 11v9H4v-9h3Z"/><path d="m7 11 4-7c1.6 0 2.6 1.1 2.3 2.7L12.7 10H18a2 2 0 0 1 2 2.3l-1 6a2 2 0 0 1-2 1.7H7"/></svg>` },
+    { k: 'uy',     t: '¡Uy!',    svg: `<svg ${S_}><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="16" rx="2" ry="2.6"/><path d="M8 9.2v.2M16 9.2v.2M7 6.8l2-.8M17 6.8l-2-.8"/></svg>` },
+    { k: 'gg',     t: 'GG',      svg: `<svg ${S_}><rect x="3" y="5" width="18" height="14" rx="5"/><path d="M10.5 10.2a2.6 2.6 0 1 0 0 3.6V12H9M17.5 10.2a2.6 2.6 0 1 0 0 3.6V12H16"/></svg>` },
+    { k: 'vamos',  t: '¡Vamos!', svg: `<svg ${S_}><path d="m13 3-8 11h6l-1 7 8-11h-6l1-7Z"/></svg>` },
+    { k: 'risa',   t: 'Jaja',    svg: `<svg ${S_}><circle cx="12" cy="12" r="9"/><path d="M7.5 13.5c.8 3 2.4 4 4.5 4s3.7-1 4.5-4Z"/><path d="M8.2 9.4c.5-.7 1.3-.7 1.8 0M14 9.4c.5-.7 1.3-.7 1.8 0"/></svg>` }
+  ];
+  let lastReact = 0, reactCool = 0;
+  const reactEl = () => document.getElementById('react'), popEl = () => document.getElementById('rpop');
+
+  function setupReactions() {
+    const b = reactEl(), pop = popEl(); if (!b || !pop) return;
+    b.hidden = false; pop.hidden = true; b.setAttribute('aria-expanded', 'false');
+    pop.innerHTML = REACTS.map(r => `<button type="button" role="menuitem" data-r="${r.k}" aria-label="${r.t}">${r.svg}<span>${r.t}</span></button>`).join('');
+    b.onclick = ev => { ev.stopPropagation(); const open = pop.hidden; pop.hidden = !open; b.setAttribute('aria-expanded', String(open)); Sfx.play('tap'); };
+    pop.onclick = ev => { const x = ev.target.closest('[data-r]'); if (x) sendReact(x.dataset.r); };
+    document.addEventListener('click', closePop);
+  }
+  function closePop(ev) {
+    const pop = popEl(); if (!pop || pop.hidden) return;
+    if (ev && ev.target && (ev.target.closest('#rpop') || ev.target.closest('#react'))) return;
+    pop.hidden = true; const b = reactEl(); b && b.setAttribute('aria-expanded', 'false');
+  }
+  function teardownReactions() {
+    const b = reactEl(), pop = popEl(); if (b) b.hidden = true; if (pop) pop.hidden = true;
+    document.removeEventListener('click', closePop);
+  }
+  async function sendReact(k) {
+    if (!fb || !code || !G || G.over) return;
+    const now = Date.now();
+    if (now < reactCool) return;                       // máx. una cada 2 s, para no saturar
+    reactCool = now + 2000; closePop();
+    const id = now * 10 + seat;
+    lastReact = id;
+    showReact(seat, k);
+    quiet(fb.set(`rooms/${code}/react`, { by: seat, k, id, at: fb.now() }));
+  }
+  function handleReact(r) {
+    if (!r || !r.id || r.id === lastReact) return;
+    const first = lastReact === 0;                     // al entrar no mostramos reacciones viejas
+    lastReact = r.id;
+    if (first && fb.now() - (r.at || 0) > 4000) return;
+    if (r.by === seat || !REACTS.some(x => x.k === r.k)) return;
+    showReact(r.by, r.k);
+  }
+  function showReact(by, k) {
+    const r = REACTS.find(x => x.k === k), pill = document.getElementById('pl' + by); if (!r || !pill) return;
+    const rc = pill.getBoundingClientRect(), el = document.createElement('div');
+    el.className = 'rfx p' + by; el.innerHTML = `${r.svg}<span>${r.t}</span>`;
+    el.style.left = (rc.left + rc.width / 2) + 'px'; el.style.top = (rc.bottom + 6) + 'px';
+    document.body.appendChild(el); setTimeout(() => el.remove(), 2400);
+    if (by !== seat) Sfx.play('tap');
+  }
+
   function onRoom(r) {
     if (!code) return;
     if (!r) {                                         // el creador cerró la sala
@@ -176,6 +233,7 @@ const Online = (() => {
       return;
     }
     room = r;
+    handleReact(r.react);
     const g = norm(r.game);
     if (g.status === 'waiting') { if (seat === 0 && $('#lobby').hidden === false) showHost(); return; }
     if (!G || G.round !== g.round) startRound(r, g);
@@ -192,6 +250,7 @@ const Online = (() => {
       cards: g.deck.map((sym, i) => ({ id: i, sym, up: false, matched: false, owner: -1, el: null }))
     };
     lastEv = g.ev ? g.ev.id : 0;                      // no repetir avisos viejos
+    setupReactions();
     prev = null;
     clearTimeout(timer); timerKey = ''; clearTimeout(clockTimer); clockKey = '';
     mountGame(G);
@@ -431,6 +490,7 @@ const Online = (() => {
       if (seat === 0 && (!room || norm(room.game).status === 'waiting')) quiet(fb.remove('rooms/' + code));
       else { quiet(fb.cancelOnDisconnect(p)); quiet(fb.set(p, false)); }
     }
+    teardownReactions(); lastReact = 0; reactCool = 0;
     code = null; seat = -1; room = null; G = null;
     try { if (location.search) history.replaceState(null, '', location.pathname); } catch (e) {}
   }

@@ -329,3 +329,16 @@ body.tutorial #toast{display:none!important}
 .pass .pdot.o1{background:var(--p2)}
 .pass h2{margin:0}
 .linkbtn{display:block;margin:14px auto 0;background:none;border:0;font:inherit;font-size:13px;color:var(--text2);cursor:pointer;padding:6px}
+
+/* Reacciones rápidas (en línea) */
+.rpop{position:fixed;z-index:40;top:max(58px,calc(env(safe-area-inset-top) + 50px));right:10px;display:flex;gap:2px;padding:6px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);border-radius:22px;box-shadow:0 0 0 1px var(--line),0 18px 40px -16px rgba(0,0,0,.35);animation:rpin .45s var(--spring)}
+.rpop[hidden]{display:none}
+.rpop button{display:flex;flex-direction:column;align-items:center;gap:3px;width:56px;padding:8px 2px 6px;border:0;border-radius:16px;background:none;color:var(--text);font:inherit;font-size:11px;font-weight:600;cursor:pointer;transition:background .15s,transform .35s var(--spring)}
+.rpop button svg{width:26px;height:26px}
+.rpop button:hover{background:var(--surface)}.rpop button:active{transform:scale(.9)}
+@keyframes rpin{from{opacity:0;transform:translateY(-8px) scale(.94)}}
+.rfx{position:fixed;z-index:56;transform:translateX(-50%);display:flex;align-items:center;gap:7px;padding:8px 14px 8px 10px;border-radius:999px;background:#fff;color:var(--p1);font-weight:700;font-size:16px;white-space:nowrap;pointer-events:none;box-shadow:0 0 0 1px var(--line),0 14px 30px -12px rgba(0,0,0,.35);animation:rfx 2.4s var(--spring) forwards}
+.rfx.p1{color:var(--p2)}
+.rfx svg{width:24px;height:24px}
+@keyframes rfx{0%{opacity:0;transform:translateX(-50%) translateY(-8px) scale(.7)}12%{opacity:1;transform:translateX(-50%) scale(1.06)}20%{transform:translateX(-50%) scale(1)}85%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(6px)}}
+@media(prefers-reduced-motion:reduce){.rpop,.rfx{animation:none}.rfx{animation:rfxf 2.4s forwards}@keyframes rfxf{0%,85%{opacity:1}100%{opacity:0}}}
