@@ -1,8 +1,8 @@
 'use strict';
 /* Service worker: el juego abre sin conexión (local y contra la máquina).
    Sube VERSION cada vez que cambies archivos para que los celulares se actualicen. */
-const VERSION = 'pcp-v3';
-const FILES = ['./', 'index.html', 'styles.css', 'app.js', 'audio.js', 'online.js', 'tutorial.js', 'firebase-config.js',
+const VERSION = 'pcp-v5';
+const FILES = ['./', 'index.html', 'styles.css', 'app.js', 'audio.js', 'online.js', 'tutorial.js', 'pwa.js', 'firebase-config.js',
   'vendor/qrcode.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

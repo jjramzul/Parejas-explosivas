@@ -38,6 +38,9 @@ const SIZES = {
 };
 const pdesc = (id, G) => id === 'vision' && G ? `Revela ${G.size.vision} cartas al azar por un instante.`
   : id === 'shuffle' && G && G.online ? 'Mezcla las cartas sin pareja. Úsalo en tu turno o en el del rival, antes de que voltee.'
+  : G && G.online && G.players.length > 2 && id === 'freeze' ? 'Eliges a un jugador: pierde su próximo turno.'
+  : G && G.online && G.players.length > 2 && id === 'short' ? 'Eliges a un jugador: en su próximo turno su primera carta se cierra sola a los 1,5 s.'
+  : G && G.online && G.players.length > 2 && id === 'mirror' ? 'Copias el último poder que usó otro jugador.'
   : POWERS[id].desc;
 
 /* ====================== Temas (SVG animados) ====================== */
@@ -253,6 +256,7 @@ function initHome() {
   $('#join').onclick = () => Online.openJoin();
   applyTheme(); renderPowers();
   eggTaps();
+  $('#howto').onclick = () => { Sfx.play('tap'); Tutorial.start(); };
 }
 
 /* Huevo de pascua: 5 toques seguidos al título desbloquean el tema secreto */
@@ -307,7 +311,7 @@ function startGame(rematch) {
 
 /* Estadísticas de la partida y marcador de la serie de revanchas */
 let SER = { w: [0, 0], t: 0, n: 0 };
-const newStats = () => ({ t0: Date.now(), p: [0, 1].map(() => ({ tries: 0, hits: 0, streak: 0, best: 0 })) });
+const newStats = (n = 2) => ({ t0: Date.now(), p: Array.from({ length: n }, () => ({ tries: 0, hits: 0, streak: 0, best: 0 })) });
 function statHit(G, i) { const s = G.st.p[i]; s.tries++; s.hits++; s.streak++; s.best = Math.max(s.best, s.streak); }
 
 /* Feedback visual: "+1" flotante, aviso de racha y confeti */
@@ -373,8 +377,8 @@ function statMiss(G, i) { const s = G.st.p[i]; s.tries++; s.streak = 0; }
 /* Monta la partida en pantalla (lo usa también el modo en línea) */
 function mountGame(G) {
   const th = G.th, pool = G.pool;
-  S = G; G.st = newStats();
-  if (!G.rematch) SER = { w: [0, 0], t: 0, n: 0 };
+  S = G; G.st = newStats(G.players.length);
+  if (!G.rematch || SER.w.length !== G.players.length) SER = { w: G.players.map(() => 0), t: 0, n: 0 };
   closeSheet(true);
   $('#status').classList.remove('low');
   Sfx.play('start');
@@ -391,13 +395,15 @@ function mountGame(G) {
     c.el = el; board.appendChild(el);
   });
   // marcadores
-  $('#scores').innerHTML = [0, 1].map(i => `<div class="pill p${i}" id="pl${i}"><div class="nm"><i></i><span></span></div><div class="sc">0</div><div class="pm"><div class="pw"></div><div class="bd"></div></div><i class="tbar" aria-hidden="true"></i></div>`).join('');
+  $('#scores').className = 'scores n' + G.players.length;
+  $('#scores').onclick = ev => { const pl = ev.target.closest('.pill'); if (pl && S && S.tg && S.tg.stage === 'victim') pickVictim(S, +pl.id.slice(2)); };
+  $('#scores').innerHTML = G.players.map((_, i) => `<div class="pill p${i}" id="pl${i}"><div class="nm"><i></i><span></span></div><div class="sc">0</div><div class="pm"><div class="pw"></div><div class="bd"></div></div><i class="tbar" aria-hidden="true"></i></div>`).join('');
   // poderes
   $('#dr').innerHTML = pool.map(p => `<button class="pbtn" data-p="${p}" aria-label="${POWERS[p].name}: ${pdesc(p, G)}">${pIcon(POWERS[p].icon)}<span class="pn">${POWERS[p].name}</span><small class="pd" aria-hidden="true">${pdesc(p, G)}</small></button>`).join('');
   $('#dr').onclick = ev => {
     const b = ev.target.closest('.pbtn'); if (!b || !S || !can(S, b.dataset.p)) return;
     const pid = b.dataset.p, u = S.online ? S.me : S.turn;
-    if (needOf(S, pid, u)) { startTarget(S, pid, u); return; }
+    if (needOf(S, pid, u) || needVictim(S, effOf(S, pid, u), u)) { startTarget(S, pid, u); return; }
     if (S.online) Online.power(pid); else usePower(S, pid);
   };
   $('#tcancel').onclick = cancelTarget;
@@ -412,7 +418,10 @@ const myTurn = G => G.online ? G.turn === G.me && G.status === 'playing' : !isAI
 /* ---- Poderes con objetivo, cuarentena y marcas ---- */
 const sfxOf = p => ({ swap: 'shuffle', compass: 'vision', mirror: 'shield', short: 'tick', quarantine: 'freeze' })[p] || p;
 const NEED = { swap: 2, compass: 1, quarantine: 1 };                       // cartas que hay que elegir
-const effOf = (G, pid, u) => pid === 'mirror' ? G.players[1 - u].last : pid;  // el Espejo copia el último poder del rival
+const lastOf = (G, u) => { let b = -1; G.players.forEach((p, i) => { if (i !== u && p.last && (b < 0 || (p.lastAt || 0) > (G.players[b].lastAt || 0))) b = i; }); return b < 0 ? null : G.players[b].last; };
+const effOf = (G, pid, u) => pid === 'mirror' ? lastOf(G, u) : pid;     // el Espejo copia el último poder que usó otro jugador
+const VICTIM = ['freeze', 'short'];
+const needVictim = (G, eff, u) => G.online && VICTIM.includes(eff) && G.players.length > 2;
 const needOf = (G, pid, u) => NEED[effOf(G, pid, u)] || 0;
 const freeCards = G => G.cards.filter(c => !c.matched && !c.up);
 const candidates = (G, eff) => eff === 'compass' ? freeCards(G) : freeCards(G).filter(c => c.quar < 0);
@@ -434,18 +443,26 @@ function can(G, pid) {
   return myTurn(G) && !G.players[G.turn].used[pid] && avail(G, pid, G.turn);
 }
 function startTarget(G, pid, u) {
-  const eff = effOf(G, pid, u), need = NEED[eff];
-  G.tg = { pid, eff, need, got: [] }; sync();
-  toast(need === 2 ? 'Elige 2 cartas' : 'Elige una carta');
+  const eff = effOf(G, pid, u), need = NEED[eff] || 0, victim = needVictim(G, eff, u);
+  G.tg = { pid, eff, need, got: [], victim: null, stage: victim ? 'victim' : 'cards' }; sync();
+  toast(victim ? 'Elige a un jugador' : need === 2 ? 'Elige 2 cartas' : 'Elige una carta');
 }
 function cancelTarget() { if (S && S.tg) { S.tg = null; sync(); } }
+function runTarget(G) {
+  const t = G.tg, ids = t.got.map(x => x.id), pid = t.pid, v = t.victim; G.tg = null; sync();
+  if (G.online) Online.power(pid, ids, v); else usePower(G, pid, ids);
+}
+function pickVictim(G, i) {
+  const t = G.tg; if (!t || t.stage !== 'victim' || i === G.me || !G.players[i]) return;
+  t.victim = i; Sfx.play('tap');
+  if (t.need) { t.stage = 'cards'; sync(); toast(t.need === 2 ? 'Ahora elige 2 cartas' : 'Ahora elige una carta'); } else runTarget(G);
+}
 function pickTarget(G, c) {
-  const t = G.tg; if (!t || !candidates(G, t.eff).includes(c)) return;
+  const t = G.tg; if (!t || t.stage !== 'cards' || !candidates(G, t.eff).includes(c)) return;
   const i = t.got.indexOf(c); if (i >= 0) t.got.splice(i, 1); else t.got.push(c);
   Sfx.play('tap');
   if (t.got.length < t.need) { sync(); return; }
-  const ids = t.got.map(x => x.id), pid = t.pid; G.tg = null; sync();
-  if (G.online) Online.power(pid, ids); else usePower(G, pid, ids);
+  runTarget(G);
 }
 const setSym = (G, c, sym) => { c.sym = sym; c.el.querySelector('.front').innerHTML = svgOf(G.th.icons[sym]); };
 /* Parpadeo de cartas (Intercambio: 2 elegidas + 2 señuelos, sin saber cuáles son) */
@@ -479,8 +496,9 @@ function paintExtras() {
   });
   G.players.forEach((p, i) => { if (p.short) { const bd = document.querySelector('#pl' + i + ' .bd'); if (bd) bd.insertAdjacentHTML('beforeend', '<span class="badge sm">Memoria corta</span>'); } });
   const tc = $('#tcancel'); if (tc) tc.hidden = !G.tg;
+  document.querySelectorAll('.pill').forEach((el, i) => el.classList.toggle('pk', !!G.tg && G.tg.stage === 'victim' && i !== G.me));
   if (G.tg) {
-    $('#dl').textContent = G.tg.need === 2 ? `${POWERS[G.tg.pid].name}: elige 2 cartas (${G.tg.got.length}/2)` : `${POWERS[G.tg.pid].name}: elige una carta`;
+    $('#dl').textContent = G.tg.stage === 'victim' ? `${POWERS[G.tg.pid].name}: toca a un jugador` : G.tg.need === 2 ? `${POWERS[G.tg.pid].name}: elige 2 cartas (${G.tg.got.length}/2)` : `${POWERS[G.tg.pid].name}: elige una carta`;
     $('#dr').querySelectorAll('.pbtn').forEach(b => b.classList.toggle('armed', b.dataset.p === G.tg.pid));
   }
 }
@@ -489,13 +507,13 @@ function syncMain() {
   G.cards.forEach((c, i) => {
     const el = c.el;
     el.classList.toggle('up', c.up); el.classList.toggle('done', c.matched);
-    el.classList.toggle('o0', c.owner === 0); el.classList.toggle('o1', c.owner === 1);
+    [0, 1, 2, 3].forEach(k => el.classList.toggle('o' + k, c.owner === k));
     el.setAttribute('aria-label', c.up || c.matched ? `Carta ${i + 1}: ${G.th.names[c.sym]}` : `Carta ${i + 1}, boca abajo`);
   });
-  [0, 1].forEach(i => {
-    const p = G.players[i], el = $('#pl' + i); if (!el) return;
+  G.players.forEach((p, i) => {
+    const el = $('#pl' + i); if (!el) return;
     el.classList.toggle('on', G.turn === i && !G.over);
-    el.querySelector('.nm span').textContent = p.name;
+    el.querySelector('.nm span').textContent = p.name + (G.online && i === G.me ? ' (tú)' : '');
     const sc = el.querySelector('.sc'); sc.textContent = p.score;
     if (el._s !== undefined && el._s !== p.score) { sc.classList.remove('bump'); void sc.offsetWidth; sc.classList.add('bump'); }
     el._s = p.score;
@@ -505,9 +523,9 @@ function syncMain() {
   if (G.online) {
     const cur = G.players[G.me], mine = G.turn === G.me;
     const secs = G.left != null && !G.over ? ` · ${G.left} s` : '';
-    $('#status').textContent = G.over ? 'Fin de la partida' : G.status === 'waiting' ? 'Esperando rival…' : (mine ? 'Tu turno' : 'Turno de tu rival') + secs;
+    $('#status').textContent = G.over ? 'Fin de la partida' : G.status === 'waiting' ? 'Esperando rival…' : (mine ? 'Tu turno' : `Turno de ${G.players[G.turn].name}`) + secs;
     $('#status').classList.toggle('low', G.left != null && G.left <= 5 && !G.over);
-    $('#dl').textContent = G.over ? '' : !mine ? (can(G, 'shuffle') ? 'Puedes barajar antes de que tu rival voltee' : 'Tus poderes · espera tu turno') : G.magnet ? 'Imán activo: voltea una carta' : G.first ? 'Voltea la segunda carta' : 'Tus poderes';
+    $('#dl').textContent = G.over ? '' : !mine ? (can(G, 'shuffle') ? 'Puedes barajar antes de que voltee' : 'Tus poderes · espera tu turno') : G.magnet ? 'Imán activo: voltea una carta' : G.first ? 'Voltea la segunda carta' : 'Tus poderes';
     $('#dr').querySelectorAll('.pbtn').forEach(b => {
       const id = b.dataset.p, used = cur.used[id];
       b.disabled = !can(G, id);
@@ -776,7 +794,6 @@ scrim.addEventListener('click', ev => {
   const act = ev.target.closest('[data-act]');
   if (act) {
     const k = act.dataset.act;
-    if (k === 'tutorial') { closeSheet(); Sfx.play('tap'); setTimeout(() => Tutorial.start(S), 200); return; }
     if (k === 'pass' || k === 'passoff') { if (S && S.passWait) endPass(S, k === 'passoff'); return; }
     if (k === 'close' && S && S.passWait) { showPass(S); return; }
     if (k === 'rematch') { if (S && S.online) { closeSheet(); Online.rematch(); } else startGame(true); }
@@ -791,21 +808,32 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && scrim.cl
 async function finish(G) {
   G.over = true; sync(); hap([20, 40, 20]);
   await sleep(700); if (G !== S) return;
-  const [p0, p1] = G.players, tie = p0.score === p1.score, w = p0.score > p1.score ? 0 : 1;
-  if (!tie && (G.online ? w === G.me : !G.ai || w === 0)) confetti();
-  Sfx.play(tie ? 'tie' : (G.online ? w === G.me : !G.ai || w === 0) ? 'win' : 'lose');
-  const title = tie ? 'Empate' : G.online ? (w === G.me ? '¡Ganaste!' : 'Ganó tu rival') : (G.ai ? (w === 0 ? '¡Ganaste!' : 'Ganó la máquina') : `Ganó ${G.players[w].name}`);
-  const sub = tie ? 'Misma cantidad de parejas.' : `${G.players[w].score} parejas contra ${G.players[1 - w].score}.`;
+  const N = G.players.length, sc = G.players.map(p => p.score), top = Math.max(...sc);
+  const winners = sc.map((v, i) => v === top ? i : -1).filter(i => i >= 0), tie = winners.length > 1, w = winners[0];
+  const iWon = G.online ? winners.includes(G.me) : !G.ai || w === 0;
+  if (!tie && iWon || (tie && N > 2 && iWon)) confetti();
+  Sfx.play(tie ? (iWon && N > 2 ? 'win' : 'tie') : iWon ? 'win' : 'lose');
+  const names = idxs => idxs.map(i => G.players[i].name).join(' y ');
+  const title = tie ? (N > 2 ? `Empate: ${names(winners)}` : 'Empate')
+    : G.online ? (w === G.me ? '¡Ganaste!' : N > 2 ? `Ganó ${G.players[w].name}` : 'Ganó tu rival')
+    : (G.ai ? (w === 0 ? '¡Ganaste!' : 'Ganó la máquina') : `Ganó ${G.players[w].name}`);
+  const rest = sc.filter((_, i) => i !== w).sort((x, y) => y - x);
+  const sub = tie ? (N > 2 ? `${top} parejas cada uno.` : 'Misma cantidad de parejas.') : N > 2 ? `${top} parejas, ${top - rest[0]} más que el segundo.` : `${top} parejas contra ${rest[0]}.`;
   if (!G.counted) { G.counted = true; SER.n++; if (tie) SER.t++; else SER.w[w]++; }
   const dur = Math.max(1, Math.round((Date.now() - G.st.t0) / 1000)), mm = Math.floor(dur / 60), ss = String(dur % 60).padStart(2, '0');
-  const st = [0, 1].map(i => { const s = G.st.p[i], u = Object.values(G.players[i].used || {}).filter(Boolean).length;
-    return { hits: G.players[i].score, acc: s.tries ? Math.round(100 * s.hits / s.tries) : 0, best: s.best, pw: u }; });
-  const cell = (k, i, suf = '') => { const v = st[i][k], o = st[1 - i][k]; return `<b${v > o ? ' class="top"' : ''}>${v}${suf}</b>`; };
-  const rows = [['Parejas', 'hits', ''], ['Precisión', 'acc', '%'], ['Mejor racha', 'best', ''], ['Poderes usados', 'pw', '']]
-    .map(([l, k, s]) => `<div class="strow">${cell(k, 0, s)}<span>${l}</span>${cell(k, 1, s)}</div>`).join('');
-  const series = SER.n > 1 ? `<p class="series">Serie · ${G.players[0].name} ${SER.w[0]} – ${SER.w[1]} ${G.players[1].name}${SER.t ? ` · ${SER.t} empate${SER.t > 1 ? 's' : ''}` : ''}</p>` : '';
+  const st = G.players.map((p, i) => { const s = G.st.p[i], u = Object.values(p.used || {}).filter(Boolean).length;
+    return { hits: p.score, acc: s.tries ? Math.round(100 * s.hits / s.tries) : 0, best: s.best, pw: u }; });
+  const best = k => Math.max(...st.map(x => x[k]));
+  const cell = (k, i, suf = '') => `<b${st[i][k] === best(k) && st.filter(x => x[k] === best(k)).length === 1 ? ' class="lead"' : ''}>${st[i][k]}${suf}</b>`;
+  const defs = [['Parejas', 'hits', ''], ['Precisión', 'acc', '%'], ['Mejor racha', 'best', ''], ['Poderes usados', 'pw', '']];
+  const rows = N === 2
+    ? defs.map(([l, k, s]) => `<div class="strow">${cell(k, 0, s)}<span>${l}</span>${cell(k, 1, s)}</div>`).join('')
+    : `<div class="strow4 hd" style="--n:${N}"><span></span>${G.players.map((p, i) => `<b class="o${i}">${p.name}</b>`).join('')}</div>` +
+      defs.map(([l, k, s]) => `<div class="strow4" style="--n:${N}"><span>${l}</span>${G.players.map((_, i) => cell(k, i, s)).join('')}</div>`).join('');
+  const series = SER.n > 1 ? `<p class="series">Serie · ${G.players.map((p, i) => `${p.name} ${SER.w[i]}`).join(N === 2 ? ' – ' : ' · ')}${SER.t ? ` · ${SER.t} empate${SER.t > 1 ? 's' : ''}` : ''}</p>` : '';
+  const order = G.players.map((_, i) => i).sort((x, y) => sc[y] - sc[x] || x - y);
   openSheet(`<h2>${title}</h2><p class="sub2">${sub}</p>
-    <div class="res">${[0, 1].map(i => `<div class="o${i}${!tie && w === i ? ' w' : ''}"><small>${G.players[i].name}</small><b>${G.players[i].score}</b></div>`).join('')}</div>
+    <div class="res r${N}">${(N > 2 ? order : [0, 1]).map(i => `<div class="o${i}${winners.includes(i) && !(tie && N === 2) ? ' w' : ''}"><small>${G.players[i].name}</small><b>${G.players[i].score}</b></div>`).join('')}</div>
     <div class="stats">${rows}</div>
     <p class="series dur">Duración ${mm}:${ss}</p>${series}
     <div class="acts"><button class="btn" data-act="rematch">Revancha</button><button class="btn sec" data-act="menu">Menú</button></div>`, true);
@@ -820,7 +848,7 @@ $('#help').onclick = () => {
   if (!S) return;
   openSheet(`<h2>Poderes</h2><p class="rules">Úsalos al inicio de tu turno, antes de voltear. Cada jugador los usa una sola vez.</p>
     <div class="plist">${S.pool.map(id => `<div class="prow"><span class="pi">${pIcon(POWERS[id].icon)}</span><span class="pt"><b>${POWERS[id].name}</b><small>${pdesc(id, S)}</small></span></div>`).join('')}</div>
-    <div class="acts" style="margin-top:18px"><button class="btn" data-act="close">Entendido</button><button class="btn sec" data-act="tutorial">¿Cómo se juega? Ver tutorial</button></div>`);
+    <div class="acts" style="margin-top:18px"><button class="btn" data-act="close">Entendido</button></div>`);
 };
 
 initHome();

@@ -1,6 +1,6 @@
 # Parejas explosivas
 
-Juego de memoria con poderes (antes "Parejas con poderes"): 2 jugadores en el mismo dispositivo, contra la máquina o **en línea** (Firebase).
+Juego de memoria con poderes (antes "Parejas con poderes"): 2 jugadores en el mismo dispositivo, contra la máquina o **en línea de 2 a 4 jugadores** (Firebase).
 
 ## Archivos
 
@@ -39,10 +39,13 @@ Queda en: https://parejas-explosivas.web.app
 - Cada jugada se escribe con una **transacción**, así dos toques al tiempo no rompen el estado.
 - Visión, Imán y Brújula solo se muestran en la pantalla de quien los usa; Congelar, Escudo, Barajar, Intercambio, Cuarentena, Memoria corta y Espejo cambian el estado compartido (`quar`, `short`, `last` en `game`).
 - Poderes (10, se juegan 3 por partida): Visión, Congelar, Barajar, Imán (también con una carta ya volteada), Escudo (dura 1 ronda), Intercambio, Brújula, Espejo, Memoria corta y Cuarentena (hasta tu siguiente turno).
-- **Tiempo por jugada: 15 s** (`TURN_MS` en `online.js`). Se mide con la hora del servidor de Firebase, así ambos ven el mismo reloj. Si se acaba, el turno pasa al rival; si el jugador de turno se desconecta, el rival cierra el turno 2 s después.
-- **Barajar en el turno del rival:** se puede usar mientras el rival no haya volteado ninguna carta. Si ambos tocan casi al tiempo, Firebase acepta solo lo primero: si el rival volteó antes, la barajada se rechaza y el poder no se gasta.
-- La presencia usa `onDisconnect`: si tu rival se cae, verás "Desconectado".
-- Las reglas solo dejan escribir en una sala a sus dos jugadores.
+- **Tiempo por jugada: 15 s** (`TURN_MS` en `online.js`). Se mide con la hora del servidor de Firebase, así ambos ven el mismo reloj. Si se acaba, el turno pasa al siguiente jugador conectado; si el jugador de turno se desconecta, los demás cierran el turno 2 s después.
+- **Barajar en el turno del rival:** se puede usar mientras el jugador de turno no haya volteado ninguna carta. Si ambos tocan casi al tiempo, Firebase acepta solo lo primero: si el de turno volteó antes, la barajada se rechaza y el poder no se gasta.
+- La presencia usa `onDisconnect`: si alguien se cae, verás "Desconectado" y se salta su turno.
+- **Hasta 4 jugadores:** quien crea la sala ve la lista de jugadores, y los demás entran con el código o el QR. Cada uno puede cambiar su nombre (máx. 8 letras) en la sala de espera. El creador toca **Empezar** cuando quiera (mínimo 2 conectados); los desconectados se quedan fuera y los asientos se renumeran. Una vez empezada, la sala se cierra a nuevos jugadores (los que ya estaban pueden reconectarse).
+- **Poderes con varios rivales:** Congelar y Memoria corta piden elegir a quién (toca su marcador). El Escudo del afectado los bloquea; los demás poderes los bloquea el primer rival con Escudo, en orden de turno. El Espejo copia el último poder que usó otro jugador. Los turnos siguen el orden de asientos y se saltan a los desconectados y congelados.
+- Estructura de la sala: `host`, `members{uid: asiento}`, `players{pN:{online,name}}`, `config`, `game{n, scores[n], ...}`.
+- Las reglas (`database.rules.json`) solo dejan escribir en una sala a su creador y a sus miembros (o a quien entra mientras está en espera, con tope de 4). **Después de actualizar tienes que publicar las reglas:** `firebase deploy --only database,hosting`.
 
 Limitación conocida: el orden de las cartas está en la base de datos, así que alguien con las herramientas de desarrollador podría verlo. Evitarlo requiere Cloud Functions (plan Blaze).
 

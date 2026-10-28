@@ -23,6 +23,7 @@
       <div class="hero" id="hero" aria-hidden="true"></div>
       <h1><svg class="crown" id="crown" hidden viewBox="0 0 24 24" aria-label="Corona de racha perfecta" role="img"><path d="M3 18 2 7l5.5 4.5L12 4l4.5 7.5L22 7l-1 11Zm1 2h16v2H4Z"/></svg>Parejas<br><span>explosivas</span></h1>
       <p class="sub">Encuentra las parejas y usa tus poderes en el momento justo.</p>
+      <button class="howto" id="howto" type="button">¿Cómo se juega?</button>
     </section>
 
     <section class="setup" aria-label="Configuración de la partida">
@@ -46,7 +47,7 @@
     <div class="plist" id="plist" style="margin-top:10px"></div>
     <p class="pnote" id="pnote"></p>
 
-    <p class="pnote" id="onlineNote" hidden>Tú eliges tablero, tema y poderes; tu rival se une con el código o el QR.</p>
+    <p class="pnote" id="onlineNote" hidden>Tú eliges tablero, tema y poderes; los demás se unen con el código o el QR (hasta 4 jugadores). Tú decides cuándo empezar.</p>
 
     <div class="cta">
       <button class="btn" id="play">Jugar</button>
@@ -63,13 +64,15 @@
     <span></span>
   </div>
   <div class="lobby">
-    <!-- Crear sala -->
-    <section id="hostPane" class="lpane" hidden>
-      <p class="lsub">Comparte este código con tu rival</p>
+    <!-- Sala de espera -->
+    <section id="roomPane" class="lpane" hidden>
+      <p class="lsub">Comparte el código · hasta 4 jugadores</p>
       <div class="code" id="roomCode" aria-live="polite">······</div>
       <div class="qr" id="qr" aria-label="Código QR para unirse a la sala"></div>
       <button class="btn sec" id="copyLink">Copiar enlace</button>
-      <p class="wait"><span class="spin" aria-hidden="true"></span><span id="hostStatus">Esperando a tu rival…</span></p>
+      <ul class="roster" id="roster" aria-label="Jugadores en la sala"></ul>
+      <button class="btn" id="startGame" type="button" disabled>Empezar partida</button>
+      <p class="wait" id="roomWait"><span class="spin" aria-hidden="true"></span><span id="hostStatus">Esperando jugadores…</span></p>
       <p class="pnote" id="qrNote" hidden></p>
     </section>
     <!-- Unirse -->
