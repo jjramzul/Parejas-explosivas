@@ -185,7 +185,7 @@ const Online = (() => {
   function startRound(r, g) {
     const th = THEMES.find(t => t.id === r.config.theme) || THEMES[0];
     G = {
-      online: true, me: seat, round: g.round, status: g.status, th,
+      online: true, me: seat, round: g.round, rematch: g.round > 1, status: g.status, th,
       size: SIZES[r.config.size] || SIZES['16'], sizeKey: r.config.size, pool: r.config.pool || [],
       players: [0, 1].map(i => ({ name: i === seat ? 'Tú' : 'Rival', score: 0, used: {}, shield: false, frozen: false })),
       turn: g.turn, first: null, busy: false, magnet: false, over: false, pending: false, peeking: 0,
@@ -219,10 +219,10 @@ const Online = (() => {
     rivalWasOnline = rivalOnline;
     if (prev && prev.round === g.round) {
       if (g.turn !== seat && g.open.length > prev.open.length) Sfx.play('flip');          // volteó el rival
-      if (g.scores[0] + g.scores[1] > prev.scores[0] + prev.scores[1]) Sfx.play('match');
-      else if (prev.open.length === 2 && g.open.length === 0) Sfx.play('miss');
+      if (g.scores[0] + g.scores[1] > prev.scores[0] + prev.scores[1]) { Sfx.play('match'); [0, 1].forEach(i => { for (let k = g.scores[i] - prev.scores[i]; k > 0; k--) statHit(G, i); }); }
+      else if (prev.open.length === 2 && g.open.length === 0) { Sfx.play('miss'); statMiss(G, prev.turn); }
     }
-    prev = { round: g.round, open: g.open.slice(), scores: g.scores.slice() };
+    prev = { round: g.round, open: g.open.slice(), scores: g.scores.slice(), turn: g.turn };
     G.first = g.open.length === 1 ? G.cards[g.open[0]] : null;
     G.busy = g.open.length === 2 || G.pending || G.peeking > 0;
     if (g.turn !== seat) G.magnet = false;

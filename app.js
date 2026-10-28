@@ -259,7 +259,7 @@ function showView(id) {
   const el = $('#' + id); void el.offsetWidth; el.classList.add('in');
 }
 
-function startGame() {
+function startGame(rematch) {
   const th = theme(), ai = cfg.mode === 'ai';
   const pool = cfg.powerMode === 'random' ? shuf(PIDS).slice(0, 3) : PIDS.filter(p => cfg.picked.includes(p));
   const size = SIZES[cfg.size];
@@ -271,17 +271,24 @@ function startGame() {
       { name: 'Jugador 1', score: 0, used: {}, shield: false, frozen: false },
       { name: ai ? 'Máquina' : 'Jugador 2', score: 0, used: {}, shield: false, frozen: false, ai }
     ],
-    turn: 0, first: null, busy: false, magnet: false, hint: null, over: false, aiRun: false, mem: new Map(),
+    rematch: !!rematch, turn: 0, first: null, busy: false, magnet: false, hint: null, over: false, aiRun: false, mem: new Map(),
     cards: deck.map((sym, i) => ({ id: i, sym, up: false, matched: false, owner: -1, el: null }))
   };
   mountGame(G);
   maybeAI(G);
 }
 
+/* Estadísticas de la partida y marcador de la serie de revanchas */
+let SER = { w: [0, 0], t: 0, n: 0 };
+const newStats = () => ({ t0: Date.now(), p: [0, 1].map(() => ({ tries: 0, hits: 0, streak: 0, best: 0 })) });
+function statHit(G, i) { const s = G.st.p[i]; s.tries++; s.hits++; s.streak++; s.best = Math.max(s.best, s.streak); }
+function statMiss(G, i) { const s = G.st.p[i]; s.tries++; s.streak = 0; }
+
 /* Monta la partida en pantalla (lo usa también el modo en línea) */
 function mountGame(G) {
   const th = G.th, pool = G.pool;
-  S = G;
+  S = G; G.st = newStats();
+  if (!G.rematch) SER = { w: [0, 0], t: 0, n: 0 };
   closeSheet(true);
   $('#status').classList.remove('low');
   Sfx.play('start');
@@ -400,7 +407,7 @@ async function pick(G, c) {
   await sleep(750); if (G !== S) return;
   if (a.sym === c.sym) {
     a.matched = c.matched = true; a.owner = c.owner = G.turn;
-    G.players[G.turn].score++; G.mem.delete(a); G.mem.delete(c); G.first = null; G.hint = null;
+    G.players[G.turn].score++; statHit(G, G.turn); G.mem.delete(a); G.mem.delete(c); G.first = null; G.hint = null;
     hap([12, 30, 12]); Sfx.play('match'); sync();
     await sleep(600); if (G !== S) return;
     G.busy = false;
@@ -408,7 +415,7 @@ async function pick(G, c) {
     sync(); maybeAI(G);
   } else {
     await sleep(350); if (G !== S) return;
-    a.up = c.up = false; G.first = null; G.hint = null; Sfx.play('miss'); sync();
+    statMiss(G, G.turn); a.up = c.up = false; G.first = null; G.hint = null; Sfx.play('miss'); sync();
     await sleep(500); if (G !== S) return;
     G.busy = false; endTurn(G);
   }
@@ -530,7 +537,7 @@ scrim.addEventListener('click', ev => {
   if (act) {
     const k = act.dataset.act;
     if (k === 'tutorial') { closeSheet(); Sfx.play('tap'); setTimeout(() => Tutorial.start(S), 200); return; }
-    if (k === 'rematch') { if (S && S.online) { closeSheet(); Online.rematch(); } else startGame(); }
+    if (k === 'rematch') { if (S && S.online) { closeSheet(); Online.rematch(); } else startGame(true); }
     else if (k === 'menu' || k === 'leave') { if (S && S.online) Online.leave(); S = null; closeSheet(); showView('home'); }
     else closeSheet();
     return;
@@ -546,8 +553,18 @@ async function finish(G) {
   Sfx.play(tie ? 'tie' : (G.online ? w === G.me : !G.ai || w === 0) ? 'win' : 'lose');
   const title = tie ? 'Empate' : G.online ? (w === G.me ? '¡Ganaste!' : 'Ganó tu rival') : (G.ai ? (w === 0 ? '¡Ganaste!' : 'Ganó la máquina') : `Ganó ${G.players[w].name}`);
   const sub = tie ? 'Misma cantidad de parejas.' : `${G.players[w].score} parejas contra ${G.players[1 - w].score}.`;
+  if (!G.counted) { G.counted = true; SER.n++; if (tie) SER.t++; else SER.w[w]++; }
+  const dur = Math.max(1, Math.round((Date.now() - G.st.t0) / 1000)), mm = Math.floor(dur / 60), ss = String(dur % 60).padStart(2, '0');
+  const st = [0, 1].map(i => { const s = G.st.p[i], u = Object.values(G.players[i].used || {}).filter(Boolean).length;
+    return { hits: G.players[i].score, acc: s.tries ? Math.round(100 * s.hits / s.tries) : 0, best: s.best, pw: u }; });
+  const cell = (k, i, suf = '') => { const v = st[i][k], o = st[1 - i][k]; return `<b${v > o ? ' class="top"' : ''}>${v}${suf}</b>`; };
+  const rows = [['Parejas', 'hits', ''], ['Precisión', 'acc', '%'], ['Mejor racha', 'best', ''], ['Poderes usados', 'pw', '']]
+    .map(([l, k, s]) => `<div class="strow">${cell(k, 0, s)}<span>${l}</span>${cell(k, 1, s)}</div>`).join('');
+  const series = SER.n > 1 ? `<p class="series">Serie · ${G.players[0].name} ${SER.w[0]} – ${SER.w[1]} ${G.players[1].name}${SER.t ? ` · ${SER.t} empate${SER.t > 1 ? 's' : ''}` : ''}</p>` : '';
   openSheet(`<h2>${title}</h2><p class="sub2">${sub}</p>
     <div class="res">${[0, 1].map(i => `<div class="o${i}${!tie && w === i ? ' w' : ''}"><small>${G.players[i].name}</small><b>${G.players[i].score}</b></div>`).join('')}</div>
+    <div class="stats">${rows}</div>
+    <p class="series dur">Duración ${mm}:${ss}</p>${series}
     <div class="acts"><button class="btn" data-act="rematch">Revancha</button><button class="btn sec" data-act="menu">Menú</button></div>`, true);
 }
 

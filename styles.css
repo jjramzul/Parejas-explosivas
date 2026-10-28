@@ -300,3 +300,15 @@ button.prow:active{transform:scale(.98)}
 .tut-dots i.on{width:16px;background:var(--text)}
 @media(prefers-reduced-motion:reduce){.tut-spot,.tut-tip{transition:none}}
 body.tutorial #toast{display:none!important}
+
+/* Estadísticas finales */
+.stats{margin:0 0 6px}
+.strow{display:grid;grid-template-columns:minmax(0,1fr) 116px minmax(0,1fr);align-items:center;gap:10px;padding:9px 4px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.strow span{font-size:13px;color:var(--text2);text-align:center}
+.strow b{font-size:17px;font-weight:600;letter-spacing:-.01em;color:var(--text2)}
+.strow b{text-align:center}
+.strow b.top{color:var(--text)}
+.series{margin:8px 0 0;text-align:center;font-size:13px;color:var(--text2)}
+.series.dur{margin-bottom:0}
+.sheet .stats+.series+.series{font-weight:600;color:var(--text)}
+.sheet .acts{margin-top:18px}
