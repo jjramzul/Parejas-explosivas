@@ -481,5 +481,5 @@ const Online = (() => {
   const fromUrl = new URLSearchParams(location.search).get('sala');
   if (fromUrl) join(fromUrl);
 
-  return { create, openJoin, join, flip, power, rematch, leave, get state() { return { code, seat, room, G }; } };
+  return { turnSeconds: Math.round(TURN_MS / 1000), create, openJoin, join, flip, power, rematch, leave, get state() { return { code, seat, room, G }; } };
 })();

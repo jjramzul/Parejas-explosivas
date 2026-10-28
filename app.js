@@ -500,12 +500,14 @@ function aiSecond(G, a) {
   const pool = unk.length ? unk : avail.filter(c => c !== m);
   return rnd(pool.length ? pool : avail);
 }
+const tutWait = () => new Promise(r => { const t = () => (typeof Tutorial !== 'undefined' && Tutorial.open) ? setTimeout(t, 200) : r(); t(); });
 async function aiStep(G) {
-  await sleep(800); if (G !== S || G.over) return;
+  await sleep(800); await tutWait(); if (G !== S || G.over) return;
   const pw = aiPower(G);
   if (pw) { await usePower(G, pw); if (G !== S || G.over) return; await sleep(650); if (G !== S) return; }
+  await tutWait(); if (G !== S || G.over) return;
   const a = aiFirst(G); await pick(G, a); if (G !== S || G.over) return;
-  await sleep(750); if (G !== S) return;
+  await sleep(750); await tutWait(); if (G !== S) return;
   await pick(G, aiSecond(G, a));
 }
 async function maybeAI(G) {
@@ -527,6 +529,7 @@ scrim.addEventListener('click', ev => {
   const act = ev.target.closest('[data-act]');
   if (act) {
     const k = act.dataset.act;
+    if (k === 'tutorial') { closeSheet(); Sfx.play('tap'); setTimeout(() => Tutorial.start(S), 200); return; }
     if (k === 'rematch') { if (S && S.online) { closeSheet(); Online.rematch(); } else startGame(); }
     else if (k === 'menu' || k === 'leave') { if (S && S.online) Online.leave(); S = null; closeSheet(); showView('home'); }
     else closeSheet();
@@ -557,7 +560,7 @@ $('#help').onclick = () => {
   if (!S) return;
   openSheet(`<h2>Poderes</h2><p class="rules">Úsalos al inicio de tu turno, antes de voltear. Cada jugador los usa una sola vez.</p>
     <div class="plist">${S.pool.map(id => `<div class="prow"><span class="pi">${pIcon(POWERS[id].icon)}</span><span class="pt"><b>${POWERS[id].name}</b><small>${pdesc(id, S)}</small></span></div>`).join('')}</div>
-    <div class="acts" style="margin-top:18px"><button class="btn" data-act="close">Entendido</button></div>`);
+    <div class="acts" style="margin-top:18px"><button class="btn" data-act="close">Entendido</button><button class="btn sec" data-act="tutorial">¿Cómo se juega? Ver tutorial</button></div>`);
 };
 
 initHome();
