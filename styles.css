@@ -60,7 +60,7 @@ button.prow:active{transform:scale(.98)}
 
 /* ---------- Game ---------- */
 #game{display:flex;flex-direction:column;overflow:hidden}
-.top{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;padding:max(6px,env(safe-area-inset-top)) 8px 2px}
+.top{display:grid;grid-template-columns:92px 1fr 92px;align-items:center;padding:max(6px,env(safe-area-inset-top)) 8px 2px}
 .ibtn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;transition:background .2s,transform .2s var(--spring)}
 .ibtn:active{background:var(--surface);transform:scale(.92)}
 .ibtn svg{width:24px;height:24px}
@@ -159,6 +159,14 @@ button.prow:active{transform:scale(.98)}
 @keyframes fk{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.3)}}
 @keyframes fp{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.42)}}
 @keyframes dr2{0%,100%{transform:translate(-2px,2px)}50%{transform:translate(2px,-2px)}}
+
+/* ---------- Sonido ---------- */
+.tl,.tr{display:flex;gap:4px}
+.tr{justify-content:flex-end}
+.homebar{position:absolute;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));display:flex;gap:4px;z-index:2}
+.snd-music[aria-pressed=false],.snd-sfx[aria-pressed=false]{color:var(--text2)}
+#home{position:fixed}
+@media (max-width:639px){#home .wrap{padding-top:calc(max(8px,env(safe-area-inset-top)) + 44px)}}
 
 /* ---------- Sala en línea ---------- */
 .cta .btn+.btn{margin-top:10px}

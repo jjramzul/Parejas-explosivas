@@ -194,7 +194,7 @@ function seg(el, opts, get, set) {
   el.className = 'seg'; el.setAttribute('role', 'radiogroup'); el.style.setProperty('--n', opts.length);
   el.innerHTML = '<i class="thumb"></i>' + opts.map(([v, l]) => `<button role="radio" data-v="${v}">${l}</button>`).join('');
   const paint = () => { el.style.setProperty('--i', Math.max(0, opts.findIndex(o => o[0] === get()))); el.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.v === get())); };
-  el.onclick = ev => { const bt = ev.target.closest('button'); if (!bt) return; set(bt.dataset.v); paint(); };
+  el.onclick = ev => { const bt = ev.target.closest('button'); if (!bt) return; set(bt.dataset.v); paint(); Sfx.play('tap'); };
   paint();
 }
 const theme = () => THEMES.find(t => t.id === cfg.theme);
@@ -233,10 +233,11 @@ function initHome() {
   sizeNote();
   paintMode();
   $('#tiles').innerHTML = THEMES.map(t => `<button class="tile" data-t="${t.id}" style="${themeVars(t)}" aria-pressed="false">${svgOf(t.icons[0])}<span>${t.name}</span></button>`).join('');
-  $('#tiles').onclick = ev => { const x = ev.target.closest('.tile'); if (!x) return; cfg.theme = x.dataset.t; saveCfg(); applyTheme(); };
+  $('#tiles').onclick = ev => { const x = ev.target.closest('.tile'); if (!x) return; cfg.theme = x.dataset.t; saveCfg(); applyTheme(); Sfx.play('tap'); };
   $('#plist').onclick = ev => {
     const row = ev.target.closest('button.prow'); if (!row) return; const id = row.dataset.p, i = cfg.picked.indexOf(id);
     if (i >= 0) cfg.picked.splice(i, 1); else if (cfg.picked.length < 3) cfg.picked.push(id); else { toast('Máximo 3 poderes por partida'); return; }
+    Sfx.play('tap');
     saveCfg(); renderPowers();
   };
   $('#play').onclick = () => cfg.mode === 'online' ? Online.create() : startGame();
@@ -283,6 +284,7 @@ function mountGame(G) {
   S = G;
   closeSheet(true);
   $('#status').classList.remove('low');
+  Sfx.play('start');
   document.documentElement.style.setProperty('--ui', th.ui);
   // tablero
   board.innerHTML = '';
@@ -381,7 +383,7 @@ async function peek(G, cards, ms) {
 
 async function pick(G, c) {
   if (c.up || c.matched || G.over) return;
-  c.up = true; see(G, c); hap(8);
+  c.up = true; see(G, c); hap(8); Sfx.play('flip');
   if (!G.first) {
     G.first = c;
     if (G.magnet) {
@@ -399,14 +401,14 @@ async function pick(G, c) {
   if (a.sym === c.sym) {
     a.matched = c.matched = true; a.owner = c.owner = G.turn;
     G.players[G.turn].score++; G.mem.delete(a); G.mem.delete(c); G.first = null; G.hint = null;
-    hap([12, 30, 12]); sync();
+    hap([12, 30, 12]); Sfx.play('match'); sync();
     await sleep(600); if (G !== S) return;
     G.busy = false;
     if (G.cards.every(x => x.matched)) { finish(G); return; }
     sync(); maybeAI(G);
   } else {
     await sleep(350); if (G !== S) return;
-    a.up = c.up = false; G.first = null; G.hint = null; sync();
+    a.up = c.up = false; G.first = null; G.hint = null; Sfx.play('miss'); sync();
     await sleep(500); if (G !== S) return;
     G.busy = false; endTurn(G);
   }
@@ -423,8 +425,9 @@ async function usePower(G, pid) {
   const me = G.players[G.turn], op = G.players[1 - G.turn], P = POWERS[pid];
   me.used[pid] = true; hap(15); sync();
   if (pid !== 'shield' && op.shield) {
-    op.shield = false; toast(`El escudo de ${op.name} bloqueó ${P.name}`); sync(); await sleep(900); return;
+    op.shield = false; Sfx.play('block'); toast(`El escudo de ${op.name} bloqueó ${P.name}`); sync(); await sleep(900); return;
   }
+  Sfx.play(pid);
   if (pid === 'vision') {
     G.busy = true; sync(); toast(`${me.name} usó Visión`);
     const pk = shuf(G.cards.filter(c => !c.matched && !c.up)).slice(0, G.size.vision);
@@ -537,6 +540,7 @@ async function finish(G) {
   G.over = true; sync(); hap([20, 40, 20]);
   await sleep(700); if (G !== S) return;
   const [p0, p1] = G.players, tie = p0.score === p1.score, w = p0.score > p1.score ? 0 : 1;
+  Sfx.play(tie ? 'tie' : (G.online ? w === G.me : !G.ai || w === 0) ? 'win' : 'lose');
   const title = tie ? 'Empate' : G.online ? (w === G.me ? '¡Ganaste!' : 'Ganó tu rival') : (G.ai ? (w === 0 ? '¡Ganaste!' : 'Ganó la máquina') : `Ganó ${G.players[w].name}`);
   const sub = tie ? 'Misma cantidad de parejas.' : `${G.players[w].score} parejas contra ${G.players[1 - w].score}.`;
   openSheet(`<h2>${title}</h2><p class="sub2">${sub}</p>

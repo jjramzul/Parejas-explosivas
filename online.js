@@ -25,7 +25,7 @@ const Online = (() => {
   let code = null, seat = -1, room = null, G = null;  // sala actual, mi asiento (0 = creador)
   let unsub = [], lastEv = 0, timer = null, timerKey = '', rivalWasOnline = null;
   const TURN_MS = window.PCP_TURN_MS || 15000;        // tiempo máximo por jugada
-  let clockTimer = null, clockKey = '', ticker = null, warned = '';
+  let clockTimer = null, clockKey = '', ticker = null, warned = '', prev = null, lastTick = null;
 
   /* ---------- Firebase: se carga solo cuando se usa el modo en línea ---------- */
   const loadScript = src => new Promise((ok, ko) => {
@@ -192,6 +192,7 @@ const Online = (() => {
       cards: g.deck.map((sym, i) => ({ id: i, sym, up: false, matched: false, owner: -1, el: null }))
     };
     lastEv = g.ev ? g.ev.id : 0;                      // no repetir avisos viejos
+    prev = null;
     clearTimeout(timer); timerKey = ''; clearTimeout(clockTimer); clockKey = '';
     mountGame(G);
     clearInterval(ticker); ticker = setInterval(tick, 250);
@@ -216,6 +217,12 @@ const Online = (() => {
     const rivalOnline = !G.players[1 - seat].offline;
     if (rivalWasOnline !== null && rivalOnline !== rivalWasOnline) toast(rivalOnline ? 'Tu rival volvió' : 'Tu rival se desconectó');
     rivalWasOnline = rivalOnline;
+    if (prev && prev.round === g.round) {
+      if (g.turn !== seat && g.open.length > prev.open.length) Sfx.play('flip');          // volteó el rival
+      if (g.scores[0] + g.scores[1] > prev.scores[0] + prev.scores[1]) Sfx.play('match');
+      else if (prev.open.length === 2 && g.open.length === 0) Sfx.play('miss');
+    }
+    prev = { round: g.round, open: g.open.slice(), scores: g.scores.slice() };
     G.first = g.open.length === 1 ? G.cards[g.open[0]] : null;
     G.busy = g.open.length === 2 || G.pending || G.peeking > 0;
     if (g.turn !== seat) G.magnet = false;
@@ -229,6 +236,7 @@ const Online = (() => {
     if (!ev || ev.id === lastEv) return;
     lastEv = ev.id;
     const mine = ev.by === seat, P = POWERS[ev.pid] || {};
+    Sfx.play(ev.kind === 'power' ? ev.pid : ev.kind === 'blocked' ? 'block' : ev.kind === 'timeout' ? 'timeout' : ev.kind === 'skip' ? 'freeze' : '');
     if (ev.kind === 'power') {
       if (ev.pid === 'freeze') toast(mine ? 'Tu rival perderá su próximo turno' : 'Te congelaron: pierdes tu próximo turno');
       else if (ev.pid === 'shield') toast(mine ? 'Activaste tu Escudo' : 'Tu rival activó su Escudo');
@@ -322,6 +330,8 @@ const Online = (() => {
     });
     const k = `${g.turnAt}`;
     if (live && g.turn === seat && left <= 5 && warned !== k) { warned = k; hap(10); }
+    if (live && g.turn === seat && left <= 5 && left > 0 && left !== lastTick) Sfx.play('tick');
+    lastTick = left;
     if (left !== G.left) { G.left = left; sync(); }
   }
 
@@ -329,7 +339,7 @@ const Online = (() => {
   async function flip(c) {
     if (!G || G.pending || G.busy) return;
     const idx = c.id;
-    G.pending = true; G.busy = true; c.up = true; sync(); hap(8);   // se voltea al instante
+    G.pending = true; G.busy = true; c.up = true; sync(); hap(8); Sfx.play('flip');   // se voltea al instante
     let res = null;
     try {
       res = await fb.tx(gp(), cur => {
@@ -455,7 +465,7 @@ const Online = (() => {
   $('#copyLink').onclick = async () => {
     const url = link();
     try {
-      if (navigator.share) await navigator.share({ title: 'Parejas con poderes', text: `Únete a mi sala: ${code}`, url });
+      if (navigator.share) await navigator.share({ title: 'Parejas explosivas', text: `Únete a mi sala: ${code}`, url });
       else { await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
     } catch (e) { /* el usuario canceló */ }
   };

@@ -4,16 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
-<title>Parejas con poderes</title>
+<title>Parejas explosivas</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <main id="home" class="view in">
+  <div class="homebar"><button class="ibtn snd-music" type="button"></button><button class="ibtn snd-sfx" type="button"></button></div>
   <div class="wrap">
     <section class="intro">
       <div class="hero" id="hero" aria-hidden="true"></div>
-      <h1>Parejas<br><span>con poderes</span></h1>
+      <h1>Parejas<br><span>explosivas</span></h1>
       <p class="sub">Encuentra las parejas y usa tus poderes en el momento justo.</p>
     </section>
 
@@ -84,9 +85,9 @@
 
 <main id="game" class="view" hidden>
   <div class="top">
-    <button class="ibtn" id="back" aria-label="Salir de la partida"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+    <div class="tl"><button class="ibtn" id="back" aria-label="Salir de la partida"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><button class="ibtn" id="help" aria-label="Ver poderes y reglas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></button></div>
     <div class="status" id="status" aria-live="polite"></div>
-    <button class="ibtn" id="help" aria-label="Ver poderes y reglas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></button>
+    <div class="tr"><button class="ibtn snd-music" type="button"></button><button class="ibtn snd-sfx" type="button"></button></div>
   </div>
   <div class="scores" id="scores"></div>
   <div class="stage"><div class="board" id="board"></div></div>
@@ -102,6 +103,7 @@
 <script src="vendor/qrcode.js"></script>
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
+<script src="audio.js"></script>
 <script src="online.js"></script>
 </body>
 </html>
