@@ -256,6 +256,7 @@ function initHome() {
   applyTheme(); renderPowers();
   eggTaps();
   $('#howto').onclick = () => { Sfx.play('tap'); Tutorial.start(); };
+  $('#stats').onclick = () => { Sfx.play('tap'); showStats(); };
 }
 
 /* Huevo de pascua: 5 toques seguidos al título desbloquean el tema secreto */
@@ -284,7 +285,17 @@ function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400);
 }
+/* Pantalla siempre encendida mientras juegas o esperas en la sala */
+let wakeLock = null;
+async function keepAwake(on) {
+  try {
+    if (on && 'wakeLock' in navigator) { if (!wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } }
+    else if (wakeLock) { await wakeLock.release(); wakeLock = null; }
+  } catch (e) { wakeLock = null; }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (!$('#game').hidden || !$('#lobby').hidden)) keepAwake(true); });
 function showView(id) {
+  keepAwake(id !== 'home');
   ['home', 'game', 'lobby'].forEach(v => { const el = $('#' + v); el.hidden = v !== id; el.classList.remove('in'); });
   const el = $('#' + id); void el.offsetWidth; el.classList.add('in');
 }
@@ -530,6 +541,7 @@ function syncMain() {
     const cur = G.players[G.me], mine = G.turn === G.me;
     const secs = G.left != null && !G.over ? ` · ${G.left} s` : '';
     $('#status').textContent = G.over ? 'Fin de la partida' : G.status === 'waiting' ? 'Esperando rival…' : (mine ? 'Tu turno' : `Turno de ${G.players[G.turn].name}`) + secs;
+    if (G.offline && !G.over) $('#status').textContent = 'Sin conexión… reconectando';
     $('#status').classList.toggle('low', G.left != null && G.left <= 5 && !G.over);
     $('#dl').textContent = G.over ? '' : !mine ? ((rx => rx.length ? 'Puedes usar ahora: ' + rx.map(p => POWERS[p].name).join(', ') : 'Tus poderes · espera tu turno')(['shield', 'shuffle', 'swap', 'freeze', 'quarantine'].filter(p => G.pool.includes(p) && can(G, p)))) : G.magnet ? 'Imán activo: voltea una carta' : G.first ? 'Voltea la segunda carta' : 'Tus poderes';
     $('#dr').querySelectorAll('.pbtn').forEach(b => {
@@ -809,6 +821,10 @@ scrim.addEventListener('click', ev => {
     const k = act.dataset.act;
     if (k === 'pass' || k === 'passoff') { if (S && S.passWait) endPass(S, k === 'passoff'); return; }
     if (k === 'close' && S && S.passWait) { showPass(S); return; }
+    if (k === 'resetstats') {
+      if (!act.dataset.sure) { act.dataset.sure = '1'; act.textContent = '¿Seguro? Toca otra vez'; return; }
+      STATS = loadStatsEmpty(); saveStats(); showStats(); return;
+    }
     if (k === 'rematch') { const rr = !!(sheet.querySelector('#rerollPw') || { checked: true }).checked; if (S && S.online) { closeSheet(); Online.rematch(rr); } else startGame(true, rr); }
     else if (k === 'menu' || k === 'leave') { if (S && S.online) Online.leave(); S = null; closeSheet(); showView('home'); }
     else closeSheet();
@@ -817,6 +833,42 @@ scrim.addEventListener('click', ev => {
   if (ev.target === scrim && !sheetLock) closeSheet();
 });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && scrim.classList.contains('show') && !sheetLock) closeSheet(); });
+
+/* ---------- Récords guardados en este dispositivo ---------- */
+const emptyRec = () => ({ w: 0, l: 0, t: 0 });
+const loadStats = () => {
+  const d = { easy: emptyRec(), hard: emptyRec(), online: emptyRec(), local: 0, pairs: 0, best: 0, streak: 0, bestStreak: 0 };
+  try { Object.assign(d, JSON.parse(localStorage.getItem('pcp-stats') || '{}')); } catch (e) {}
+  return d;
+};
+let STATS = loadStats();
+const saveStats = () => { try { localStorage.setItem('pcp-stats', JSON.stringify(STATS)); } catch (e) {} };
+function recordStats(G, winners, tie, st) {
+  const key = G.online ? 'online' : G.ai ? (G.diff === 'hard' ? 'hard' : 'easy') : 'local';
+  if (key === 'local') { STATS.local++; saveStats(); return null; }
+  const me = G.online ? G.me : 0, res = winners.includes(me) ? (tie ? 't' : 'w') : 'l';
+  STATS[key] = { ...emptyRec(), ...STATS[key] }; STATS[key][res]++;
+  STATS.pairs += G.players[me].score; STATS.best = Math.max(STATS.best, st[me].best);
+  if (key !== 'online') { STATS.streak = res === 'w' ? STATS.streak + 1 : res === 'l' ? 0 : STATS.streak; STATS.bestStreak = Math.max(STATS.bestStreak, STATS.streak); }
+  saveStats();
+  return key;
+}
+const loadStatsEmpty = () => ({ easy: emptyRec(), hard: emptyRec(), online: emptyRec(), local: 0, pairs: 0, best: 0, streak: 0, bestStreak: 0 });
+function showStats() {
+  const row = (l, r) => `<div class="rr"><span>${l}</span><b>${r.w}</b><b>${r.t}</b><b>${r.l}</b></div>`;
+  const total = STATS.easy.w + STATS.easy.l + STATS.easy.t + STATS.hard.w + STATS.hard.l + STATS.hard.t + STATS.online.w + STATS.online.l + STATS.online.t + STATS.local;
+  openSheet(`<h2>Mis récords</h2><p class="sub2">Solo se guardan en este dispositivo.</p>
+    <div class="rec">
+      <div class="rr rh"><span></span><span>Ganadas</span><span>Empates</span><span>Perdidas</span></div>
+      ${row('Máquina fácil', STATS.easy)}${row('Máquina difícil', STATS.hard)}${row('En línea', STATS.online)}
+      <div class="rx"><span>Racha de victorias vs máquina</span><b>${STATS.streak} (mejor ${STATS.bestStreak})</b></div>
+      <div class="rx"><span>Mejor racha de parejas</span><b>${STATS.best}</b></div>
+      <div class="rx"><span>Parejas encontradas</span><b>${STATS.pairs}</b></div>
+      <div class="rx"><span>Partidas de 2 en un celular</span><b>${STATS.local}</b></div>
+    </div>
+    <p class="recnote">${total ? `${total} partida${total > 1 ? 's' : ''} jugada${total > 1 ? 's' : ''}` : 'Aún no hay partidas. ¡A jugar!'}</p>
+    <div class="acts" style="margin-top:18px"><button class="btn" data-act="close">Cerrar</button><button class="btn sec" data-act="resetstats">Borrar récords</button></div>`);
+}
 
 async function finish(G) {
   G.over = true; sync(); hap([20, 40, 20]);
@@ -832,10 +884,12 @@ async function finish(G) {
     : (G.ai ? (w === 0 ? '¡Ganaste!' : 'Ganó la máquina') : `Ganó ${G.players[w].name}`);
   const rest = sc.filter((_, i) => i !== w).sort((x, y) => y - x);
   const sub = tie ? (N > 2 ? `${top} parejas cada uno.` : 'Misma cantidad de parejas.') : N > 2 ? `${top} parejas, ${top - rest[0]} más que el segundo.` : `${top} parejas contra ${rest[0]}.`;
+  let recKey = null;
   if (!G.counted) { G.counted = true; SER.n++; if (tie) SER.t++; else SER.w[w]++; }
   const dur = Math.max(1, Math.round((Date.now() - G.st.t0) / 1000)), mm = Math.floor(dur / 60), ss = String(dur % 60).padStart(2, '0');
   const st = G.players.map((p, i) => { const s = G.st.p[i], u = Object.values(p.used || {}).filter(Boolean).length;
     return { hits: p.score, acc: s.tries ? Math.round(100 * s.hits / s.tries) : 0, best: s.best, pw: u }; });
+  if (G.counted && !G.recorded) { G.recorded = true; recKey = recordStats(G, winners, tie, st); }
   const best = k => Math.max(...st.map(x => x[k]));
   const cell = (k, i, suf = '') => `<b${st[i][k] === best(k) && st.filter(x => x[k] === best(k)).length === 1 ? ' class="lead"' : ''}>${st[i][k]}${suf}</b>`;
   const defs = [['Parejas', 'hits', ''], ['Precisión', 'acc', '%'], ['Mejor racha', 'best', ''], ['Poderes usados', 'pw', '']];
@@ -848,7 +902,7 @@ async function finish(G) {
   openSheet(`<h2>${title}</h2><p class="sub2">${sub}</p>
     <div class="res r${N}">${(N > 2 ? order : [0, 1]).map(i => `<div class="o${i}${winners.includes(i) && !(tie && N === 2) ? ' w' : ''}"><small>${G.players[i].name}</small><b>${G.players[i].score}</b></div>`).join('')}</div>
     <div class="stats">${rows}</div>
-    <p class="series dur">Duración ${mm}:${ss}</p>${series}
+    <p class="series dur">Duración ${mm}:${ss}</p>${series}${recKey && recKey !== 'local' ? `<p class="series">Tu récord · ${recKey === 'online' ? 'En línea' : recKey === 'hard' ? 'Máquina difícil' : 'Máquina fácil'}: ${STATS[recKey].w} G · ${STATS[recKey].t} E · ${STATS[recKey].l} P</p>` : ''}
     <label class="rchk"><input type="checkbox" id="rerollPw" checked><span>Sortear poderes de nuevo</span></label>
     <div class="acts"><button class="btn" data-act="rematch">Revancha</button><button class="btn sec" data-act="menu">Menú</button></div>`, true);
 }

@@ -204,6 +204,12 @@ const Online = (() => {
     try { history.replaceState(null, '', location.pathname + '?sala=' + code); } catch (e) {}
     lastEv = 0; presWas = [];
     unsub.push(fb.on('rooms/' + code, onRoom));
+    // Si el celular pierde la conexión (por ejemplo al cambiar de app para copiar el código), Firebase te marca desconectado.
+    // Al volver hay que reafirmar "en línea" y volver a registrar la desconexión, o te quedas como desconectado para siempre.
+    unsub.push(fb.on('.info/connected', v => {
+      if (v === true && presPath && code) { quiet(fb.set(presPath, true)); quiet(fb.onDisconnectSet(presPath, false)); }
+      if (G && (v === true || v === false) && G.offline !== (v === false)) { G.offline = v === false; if (!G.offline) toast('Conexión recuperada'); sync(); }
+    }));
   }
 
   /* ====================== Reacciones rápidas ====================== */
@@ -334,6 +340,7 @@ const Online = (() => {
     });
     const sum = a => a.reduce((x, y) => x + y, 0);
     if (prev && prev.round === g.round) {
+      if (g.turn === seat && prev.turn !== seat && g.open.length === 0) hap([15, 40, 15]);   // te toca
       if (g.turn !== seat && g.open.length > prev.open.length) Sfx.play('flip');          // volteó otro jugador
       if (sum(g.scores) > sum(prev.scores)) { Sfx.play('match'); G.marks = null; g.scores.forEach((v, i) => { for (let k = v - prev.scores[i]; k > 0; k--) statHit(G, i); if (v > prev.scores[i]) fxMatch(G, fresh.length ? fresh : [], i); }); }
       else if (prev.open.length === 2 && g.open.length === 0) { Sfx.play('miss'); statMiss(G, prev.turn); }

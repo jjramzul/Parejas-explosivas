@@ -33,7 +33,7 @@ h1 span{color:var(--ui);transition:color .4s}
 .seg button{position:relative;z-index:1;min-height:44px;font-weight:600;font-size:15px;color:var(--text2);letter-spacing:-.005em;transition:color .2s}
 .seg button[aria-checked=true]{color:var(--text)}
 .tiles{display:flex;flex-wrap:wrap;gap:10px}
-.tiles .tile{flex:1 1 112px}
+.tiles .tile{flex:1 1 96px}
 .tile{display:grid;justify-items:center;gap:6px;padding:14px 8px 12px;background:var(--surface);border-radius:20px;box-shadow:inset 0 0 0 2px transparent;transition:transform .35s var(--spring),box-shadow .25s,background .25s}
 .tile:active{transform:scale(.96)}
 .tile svg{width:54px;height:54px}
@@ -53,7 +53,7 @@ button.prow:active{transform:scale(.98)}
 .prow[aria-pressed=true] .ck svg{transform:scale(1)}
 .prow.dim{opacity:.5}
 .pnote{margin:10px 4px 0;font-size:13px;color:var(--text2);line-height:1.4}
-.cta{position:sticky;bottom:0;margin:0 -20px;padding:22px 20px max(18px,env(safe-area-inset-bottom));background:linear-gradient(to top,#fff 62%,rgba(255,255,255,0))}
+.cta{position:sticky;z-index:20;bottom:0;margin:0 -20px;padding:22px 20px max(18px,env(safe-area-inset-bottom));background:linear-gradient(to top,#fff 62%,rgba(255,255,255,0))}
 .btn{display:block;width:100%;min-height:54px;border-radius:16px;font-weight:600;font-size:17px;letter-spacing:-.01em;background:var(--ui);color:#fff;transition:transform .3s var(--spring),opacity .2s,background .4s}
 .btn:active{transform:scale(.97)}
 .btn[disabled]{opacity:.38;cursor:default}
@@ -86,7 +86,7 @@ button.prow:active{transform:scale(.98)}
 .badge.sh{background:#E3F4E8;color:#17672F}
 @keyframes badgeIn{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
 .stage{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:8px 16px}
-.board{--cols:4;--rows:4;--maxw:560px;--r:clamp(12px,4.2cqw,22px);width:min(100cqw,calc(100cqh * var(--cols) / var(--rows)),var(--maxw));aspect-ratio:var(--cols)/var(--rows);display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);gap:clamp(8px,2.6cqw,14px)}
+.board{--cols:4;--rows:4;--k:1;--maxw:560px;--r:clamp(12px,4.2cqw,22px);width:min(100cqw,calc(100cqh * var(--cols) / (var(--rows) * var(--k))),var(--maxw));aspect-ratio:var(--cols)/calc(var(--rows) * var(--k));display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);gap:clamp(8px,2.6cqw,14px)}
 .board.s36{--cols:6;--rows:6;--maxw:640px;--r:clamp(8px,2.6cqw,16px);gap:clamp(5px,1.7cqw,10px)}
 .board.s36 .back::before{border-width:2px}
 .card{position:relative;display:block;perspective:800px;border-radius:var(--r);transition:transform .35s var(--spring)}
@@ -386,6 +386,9 @@ h1.wob{animation:wob .35s var(--spring)}
 .howto{display:block;margin:12px auto 0;padding:8px 16px;border:0;border-radius:999px;background:color-mix(in srgb,var(--ui) 10%,#fff);color:var(--ui);font:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:transform .3s var(--spring),background .2s}
 .howto:active{transform:scale(.96)}
 @media(min-width:960px){.howto{margin-left:0}}
+.hbtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.hbtns .howto{margin:0}
+@media(min-width:960px){.hbtns{justify-content:flex-start}}
 .tstep{margin:0 0 4px;text-align:center;font-size:12px;font-weight:600;color:var(--text2)}
 .tt{text-align:center}
 .tartw{margin:16px 0 4px;padding:18px 10px;background:var(--surface);border-radius:22px}
@@ -462,3 +465,23 @@ h1.wob{animation:wob .35s var(--spring)}
 .rsize .pnote{margin:0}
 .rchk{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0 2px;font-size:15px;color:var(--text);cursor:pointer;min-height:44px}
 .rchk input{width:22px;height:22px;accent-color:var(--ui);flex:none}
+/* Toques más firmes en el juego: sin zoom por doble toque, sin menú de selección ni rebote de la página */
+html{overscroll-behavior:none}
+body{touch-action:manipulation}
+.card,.pbtn,.pill,.board,.dock,.scores{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* Celular en vertical: cartas un poco más altas para aprovechar el alto de la pantalla */
+@media (max-width:639px) and (orientation:portrait){
+  .board.s16{--k:1.45}
+  .board.s36{--k:1.14}
+}
+/* Récords */
+.rec{display:grid;gap:8px;margin:16px 0 4px}
+.rec .rr{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,.7fr));align-items:center;gap:6px;padding:12px 14px;border-radius:16px;background:var(--surface);font-variant-numeric:tabular-nums}
+.rec .rr span{font-weight:600;font-size:15px}
+.rec .rr b{text-align:center;font-size:17px;font-weight:700}
+.rec .rr small{display:block;text-align:center;font-size:11px;color:var(--text2);font-weight:500}
+.rec .rh{background:none;padding:0 14px;color:var(--text2);font-size:11px;text-align:center}
+.rec .rh span{font-size:11px;font-weight:500}
+.rec .rx{display:flex;justify-content:space-between;padding:4px 14px;font-size:14px;color:var(--text2)}
+.rec .rx b{color:var(--text)}
+.recnote{margin:6px 0 0;text-align:center;font-size:13px;color:var(--text2)}
