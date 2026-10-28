@@ -16,7 +16,7 @@ Juego de memoria con poderes (antes "Parejas con poderes"): 2 jugadores en el mi
 | `database.rules.json` | Reglas de seguridad de Realtime Database |
 | `firebase.json`, `.firebaserc` | Configuración para publicar con Firebase Hosting |
 
-## Probar
+## Probar en tu computador
 
 - Local y contra la máquina: abre `index.html` directamente.
 - En línea: ábrelo con **Live Server** de VS Code (`http://127.0.0.1:5500`) y usa dos **pestañas**: cada pestaña es un jugador distinto. Crea la sala en una y únete con el código en la otra.
@@ -38,14 +38,14 @@ Queda en: https://parejas-explosivas.web.app
 - La sala vive en `rooms/CÓDIGO` de Realtime Database; ambos escuchan ese nodo.
 - Cada jugada se escribe con una **transacción**, así dos toques al tiempo no rompen el estado.
 - Visión, Imán y Brújula solo se muestran en la pantalla de quien los usa; Congelar, Escudo, Barajar, Intercambio, Cuarentena, Memoria corta y Espejo cambian el estado compartido (`quar`, `short`, `last` en `game`).
-- Poderes (10, se juegan 3 por partida): Visión, Congelar, Barajar, Imán (también con una carta ya volteada), Escudo (dura 1 ronda), Intercambio, Brújula, Espejo, Memoria corta y Cuarentena (hasta tu siguiente turno).
+- Poderes (10, se juegan 3 por partida): Visión, Congelar (se usa en cualquier momento; si el rival aún no eligió carta en su turno, lo pierde de inmediato), Barajar, Imán (también con una carta ya volteada), Escudo (dura 1 ronda; se activa en cualquier momento, también en el turno del rival), Intercambio (se usa en cualquier momento, con cartas sin voltear), Brújula (voltea la carta elegida; también con una ya volteada), Espejo, Memoria corta (en tu turno, los demás ven las cartas que volteas la mitad del tiempo) y Cuarentena (se usa en cualquier momento; hasta tu siguiente turno).
 - **Tiempo por jugada: 15 s** (`TURN_MS` en `online.js`). Se mide con la hora del servidor de Firebase, así ambos ven el mismo reloj. Si se acaba, el turno pasa al siguiente jugador conectado; si el jugador de turno se desconecta, los demás cierran el turno 2 s después.
 - **Barajar en el turno del rival:** se puede usar mientras el jugador de turno no haya volteado ninguna carta. Si ambos tocan casi al tiempo, Firebase acepta solo lo primero: si el de turno volteó antes, la barajada se rechaza y el poder no se gasta.
 - La presencia usa `onDisconnect`: si alguien se cae, verás "Desconectado" y se salta su turno.
 - **Hasta 4 jugadores:** quien crea la sala ve la lista de jugadores, y los demás entran con el código o el QR. Cada uno puede cambiar su nombre (máx. 8 letras) en la sala de espera. El creador toca **Empezar** cuando quiera (mínimo 2 conectados); los desconectados se quedan fuera y los asientos se renumeran. Una vez empezada, la sala se cierra a nuevos jugadores (los que ya estaban pueden reconectarse).
-- **Poderes con varios rivales:** Congelar y Memoria corta piden elegir a quién (toca su marcador). El Escudo del afectado los bloquea; los demás poderes los bloquea el primer rival con Escudo, en orden de turno. El Espejo copia el último poder que usó otro jugador. Los turnos siguen el orden de asientos y se saltan a los desconectados y congelados.
+- **Poderes con varios rivales:** Congelar pide elegir a quién (toca su marcador). El Escudo del afectado lo bloquea; los demás poderes los bloquea el primer rival con Escudo, en orden de turno. El Espejo copia el último poder que usó otro jugador. Los turnos siguen el orden de asientos y se saltan a los desconectados y congelados.
 - Estructura de la sala: `host`, `members{uid: asiento}`, `players{pN:{online,name}}`, `config`, `game{n, scores[n], ...}`.
-- Las reglas (`database.rules.json`) solo dejan escribir en una sala a su creador y a sus miembros (o a quien entra mientras está en espera, con tope de 4). **Después de actualizar tienes que publicar las reglas:** `firebase deploy --only database,hosting`.
+- Las reglas (`database.rules.json`) solo dejan escribir en una sala a su creador y a sus miembros (o a quien entra mientras está en espera). **Después de actualizar tienes que publicar las reglas:** `firebase deploy --only database,hosting`.
 
 Limitación conocida: el orden de las cartas está en la base de datos, así que alguien con las herramientas de desarrollador podría verlo. Evitarlo requiere Cloud Functions (plan Blaze).
 

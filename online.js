@@ -24,6 +24,7 @@ const Online = (() => {
   let fb = null, uid = null;                          // backend y usuario anónimo
   let code = null, seat = -1, room = null, G = null;  // sala actual, mi asiento (0 = creador)
   let unsub = [], lastEv = 0, timer = null, timerKey = '', presWas = [];
+  const hideTimers = new Map();                       // cartas que se ocultan antes en pantalla (Memoria corta)
   const TURN_MS = window.PCP_TURN_MS || 15000;        // tiempo máximo por jugada
   let clockTimer = null, clockKey = '', ticker = null, warned = '', prev = null, lastTick = null;
 
@@ -123,7 +124,7 @@ const Online = (() => {
     try {
       await connect();
       const pool = cfg.powerMode === 'random' ? shuf(PIDS).slice(0, 3) : PIDS.filter(p => cfg.picked.includes(p));
-      const config = { size: cfg.size, theme: cfg.theme, pool };
+      const config = { size: cfg.size, theme: cfg.theme, pool, auto: true };   // auto: el tablero se ajusta solo a los jugadores hasta que el creador lo elija
       for (let i = 0; i < 5 && !code; i++) {
         const c = genCode();
         const r = await fb.tx('rooms/' + c, cur => cur === null ? {
@@ -296,7 +297,7 @@ const Online = (() => {
     };
     lastEv = g.ev ? g.ev.id : 0;                      // no repetir avisos viejos
     setupReactions();
-    prev = null; presWas = [];
+    prev = null; presWas = []; hideTimers.forEach(clearTimeout); hideTimers.clear();
     clearTimeout(timer); timerKey = ''; clearTimeout(clockTimer); clockKey = '';
     mountGame(G);
     clearInterval(ticker); ticker = setInterval(tick, 250);
@@ -311,8 +312,16 @@ const Online = (() => {
       const c = G.cards[i]; if (!c || c.sym === sym) return;
       c.sym = sym; c.el.querySelector('.front').innerHTML = svgOf(G.th.icons[sym]);
     });
+    /* Memoria corta de quien tiene el turno: los demás ven sus cartas la mitad del tiempo (solo en pantalla; el estado no cambia) */
+    G.hidden = G.hidden || new Set();
+    const hideOn = g.status === 'playing' && g.turn !== seat && !!g.short[g.turn];
+    if (!hideOn) { hideTimers.forEach(clearTimeout); hideTimers.clear(); G.hidden.clear(); }
+    else {
+      g.open.forEach(i => { if (!hideTimers.has(i)) hideTimers.set(i, setTimeout(() => { if (G) { G.hidden.add(i); apply(); } }, 450)); });
+      for (const [i, t] of [...hideTimers]) if (!g.open.includes(i)) { clearTimeout(t); hideTimers.delete(i); G.hidden.delete(i); }
+    }
     const fresh = [];
-    g.owner.forEach((o, i) => { const c = G.cards[i]; if (o >= 0 && !c.matched) fresh.push(c); c.owner = o; c.matched = o >= 0; c.up = g.open.includes(i); });
+    g.owner.forEach((o, i) => { const c = G.cards[i]; if (o >= 0 && !c.matched) fresh.push(c); c.owner = o; c.matched = o >= 0; c.up = g.open.includes(i) && !G.hidden.has(i); });
     G.turn = g.turn; G.status = g.status; G.me = seat;
     g.quar.forEach((q, i) => { if (G.cards[i]) G.cards[i].quar = q; });
     if (g.turn !== seat) G.marks = null;
@@ -334,7 +343,6 @@ const Online = (() => {
     G.busy = g.open.length === 2 || G.pending || G.peeking > 0;
     if (g.turn !== seat) G.magnet = false;
     handleEvent(g.ev);
-    scheduleShort(g);
     schedule(g);
     scheduleClock(g);
     if (g.status === 'over' && !G.over) finish(G); else sync();
@@ -348,7 +356,7 @@ const Online = (() => {
     Sfx.play(ev.kind === 'power' ? sfxOf(ev.pid) : ev.kind === 'blocked' ? 'block' : ev.kind === 'timeout' ? 'timeout' : ev.kind === 'skip' ? 'freeze' : ev.kind === 'close' ? 'miss' : '');
     if (ev.kind === 'power') {
       if (ev.pid === 'mirror') toast(mine ? `Copiaste ${POWERS[eff].name}` : `${who} copió ${POWERS[eff].name}`);
-      if (eff === 'freeze') toast(vic === seat ? 'Te congelaron: pierdes tu próximo turno' : `${nm(vic)} perderá su próximo turno`);
+      if (eff === 'freeze') toast(ev.now ? (vic === seat ? 'Te congelaron: pierdes este turno' : `${nm(vic)} pierde su turno`) : vic === seat ? 'Te congelaron: pierdes tu próximo turno' : `${nm(vic)} perderá su próximo turno`);
       else if (eff === 'shield') toast(mine ? 'Activaste tu Escudo (dura 1 ronda)' : `${who} activó su Escudo`);
       else if (eff === 'shuffle') { toast(mine ? 'Barajaste las cartas' : `${who} barajó las cartas`); shuffleFx(); }
       else if (eff === 'swap') {
@@ -356,7 +364,7 @@ const Online = (() => {
         if (ev.cells && G) { const cs = ev.cells.map(i => G.cards[i]).filter(Boolean); G.peeking++; G.busy = true; blinkCards(cs).then(() => { if (G) { G.peeking--; apply(); } }); }
       }
       else if (eff === 'quarantine') toast(mine ? 'Aislaste una carta hasta tu próximo turno' : `${who} aisló una carta hasta su próximo turno`);
-      else if (eff === 'short') toast(vic === seat ? 'Memoria corta: en tu turno la primera carta se cierra a los 1,5 s' : `${nm(vic)} jugará con Memoria corta`);
+      else if (eff === 'short') toast(mine ? 'Memoria corta: los demás verán tus cartas la mitad del tiempo' : `${who} usó Memoria corta: sus cartas se ven la mitad del tiempo`);
       else if (!mine && ev.pid !== 'mirror') toast(`${who} usó ${P.name}`);
     } else if (ev.kind === 'blocked') {
       toast(vic === seat ? `Tu escudo bloqueó ${P.name} de ${who}` : mine ? `El escudo de ${nm(vic)} bloqueó ${P.name}` : `El escudo de ${nm(vic)} bloqueó a ${who}`);
@@ -364,8 +372,6 @@ const Online = (() => {
       toast(mine ? 'Se acabó tu tiempo' : `A ${who} se le acabó el tiempo`);
     } else if (ev.kind === 'skip') {
       toast(mine ? 'Estás congelado: pierdes este turno' : `${who} pierde su turno`);
-    } else if (ev.kind === 'close') {
-      toast(mine ? 'Memoria corta: tu carta se cerró' : `La carta de ${who} se cerró sola`);
     }
   }
 
@@ -405,30 +411,6 @@ const Online = (() => {
     }
     g.turn = found; release(found);
     return skipped;
-  }
-
-  /* Memoria corta: la primera carta de quien tiene el efecto se cierra sola */
-  let shortTimer = null, shortKey = '';
-  function scheduleShort(g) {
-    if (g.status !== 'playing' || g.open.length !== 1 || !g.short[g.turn]) { clearTimeout(shortTimer); shortKey = ''; return; }
-    const key = `${g.round}:${g.open[0]}:${g.turnAt}`;
-    if (key === shortKey) return;
-    shortKey = key; clearTimeout(shortTimer);
-    const idx = g.open[0], turn = g.turn;
-    shortTimer = setTimeout(() => closeFirst(idx, turn), turn === seat ? 1500 : 3500);   // los demás lo cierran más tarde por si el jugador se desconecta
-  }
-  async function closeFirst(idx, turn) {
-    if (!code) return;
-    if (G && (G.peeking > 0 || G.pending)) { shortTimer = setTimeout(() => closeFirst(idx, turn), 300); return; }
-    try {
-      await fb.tx(gp(), cur => {
-        if (!cur) return cur;
-        const g = norm(cur);
-        if (g.status !== 'playing' || g.open.length !== 1 || g.open[0] !== idx || g.turn !== turn || !g.short[turn]) return;
-        g.open = []; g.ev = { id: (g.ev ? g.ev.id : 0) + 1, kind: 'close', by: turn };
-        return g;
-      });
-    } catch (e) { shortKey = ''; }
   }
 
   async function resolve() {
@@ -529,6 +511,7 @@ const Online = (() => {
   async function power(pid, targets = [], victim = null) {
     if (!G || G.pending) return;
     G.pending = true; G.busy = true; sync(); hap(15);
+    const off = offMask(room ? norm(room.game).n : 2);
     let res = null;
     try {
       res = await fb.tx(gp(), cur => {
@@ -539,17 +522,20 @@ const Online = (() => {
         if (pid === 'mirror') rivals.forEach(r => { if (g.last[r] && (src < 0 || g.lastAt[r] > g.lastAt[src])) src = r; });
         const eff = pid === 'mirror' ? (src < 0 ? 0 : g.last[src]) : pid;
         if (g.status !== 'playing' || !g.used[me] || g.used[me][pid] || !eff) return;
-        if (g.open.length && !(eff === 'magnet' && g.open.length === 1 && g.turn === seat)) return;   // con una carta volteada solo vale el Imán
-        if (g.turn !== seat && pid !== 'shuffle') return;     // solo Barajar se puede usar en el turno de otro
-        const need = NEED[eff] || 0;
+        if (!['shield', 'swap', 'freeze', 'quarantine'].includes(pid)) {   // Escudo, Intercambio, Congelar y Cuarentena valen en cualquier momento; el resto, no
+          if (g.open.length && !((eff === 'magnet' || eff === 'compass') && g.open.length === 1 && g.turn === seat)) return;   // con una carta volteada solo valen el Imán y la Brújula
+          if (g.turn !== seat && pid !== 'shuffle') return;     // solo Barajar se puede usar en el turno de otro
+        }
+        const need = eff === 'compass' && g.open.length === 1 ? 0 : NEED[eff] || 0;
         if (need) {
           if (targets.length !== need || new Set(targets).size !== need) return;
-          if (!targets.every(i => Number.isInteger(i) && i >= 0 && i < g.deck.length && g.owner[i] < 0 && !g.open.includes(i) && (eff === 'compass' || g.quar[i] < 0))) return;
+          if (!targets.every(i => Number.isInteger(i) && i >= 0 && i < g.deck.length && g.owner[i] < 0 && !g.open.includes(i) && g.quar[i] < 0)) return;
         }
-        let vic = -1;                                          // a quién afecta (Congelar y Memoria corta)
+        let vic = -1;                                          // a quién afecta (Congelar)
         if (VICTIM.includes(eff)) {
           vic = rivals.includes(victim) ? victim : (rivals.length === 1 ? rivals[0] : -1);
           if (vic < 0) return;
+          if (vic === g.turn && g.open.length) return;           // ya eligió una carta: no se le puede congelar
         }
         g.used[me][pid] = true;
         const id = (g.ev ? g.ev.id : 0) + 1;
@@ -557,10 +543,14 @@ const Online = (() => {
         if (blocker >= 0) { g.shield[blocker] = false; g.ev = { id, kind: 'blocked', by: seat, pid, victim: blocker }; return g; }
         const ev = { id, kind: 'power', by: seat, pid, eff };
         if (vic >= 0) ev.victim = vic;
-        if (eff === 'freeze') g.frozen[vic] = true;
-        if (eff === 'short') g.short[vic] = true;
+        if (eff === 'freeze') {
+          if (vic === g.turn) { passTurn(g, vic, off); g.turnAt = fb.now(); ev.now = true; }   // aún no eligió carta: pierde el turno actual
+          else g.frozen[vic] = true;
+        }
+        if (eff === 'short') g.short[seat] = true;
         if (eff === 'shield') g.shield[seat] = true;
         if (eff === 'quarantine') g.quar[targets[0]] = seat;
+        if (eff === 'compass' && need) g.open.push(targets[0]);   // la carta elegida se voltea
         if (eff === 'shuffle') {
           const free = g.owner.map((o, i) => (o < 0 && g.quar[i] < 0) ? i : -1).filter(i => i >= 0);
           const syms = shuf(free.map(i => g.deck[i]));
@@ -593,7 +583,7 @@ const Online = (() => {
           toast('Esa es su pareja'); if (p) await peekLocal([p], 1300);
         } else { G.magnet = true; toast('Voltea una carta: verás su pareja'); }
       } else if (eff === 'compass') {
-        const t = G.cards[targets[0]];
+        const t = G.cards[g.open[0]];
         const twin = G.cards.find(c => c !== t && c.sym === t.sym && !c.matched);
         const dec = rnd(G.cards.filter(c => !c.matched && !c.up && c !== t && c !== twin));
         G.marks = shuf([twin, dec].filter(Boolean)); G.compassFor = t;
@@ -640,6 +630,7 @@ const Online = (() => {
         const members = {}, players = {};
         list.forEach(([u, s], i) => { members[u] = i; players['p' + i] = pl['p' + s]; });   // asientos 0..n-1, el creador siempre en 0
         cur.members = members; cur.players = players;
+        if (cur.config.auto) cur.config.size = list.length >= 3 ? '36' : '16';
         cur.game = newGame(cur.config, 1, cur.game.ev ? cur.game.ev.id : 0, list.length);
         return cur;
       });
@@ -668,6 +659,7 @@ const Online = (() => {
       else if (presPath) quiet(fb.set(presPath, false));
     }
     presPath = '';
+    hideTimers.forEach(clearTimeout); hideTimers.clear();
     teardownReactions(); lastReact = 0; reactCool = 0;
     code = null; seat = -1; room = null; G = null;
     try { if (location.search) history.replaceState(null, '', location.pathname); } catch (e) {}
@@ -701,6 +693,8 @@ const Online = (() => {
     renderRoster();
     showRoomButtons();
   }
+  let sizeShown = '';
+  const sizeNow = online => room.config.auto ? (online >= 3 ? '36' : '16') : (room.config.size || '16');
   function renderRoster() {
     if (!room) return;
     const mem = room.members || {}, bySeat = {};
@@ -740,6 +734,15 @@ const Online = (() => {
     const host = seat === 0, btn = $('#startGame');
     btn.hidden = !host; btn.disabled = online < 2;
     btn.textContent = online < 2 ? 'Empezar partida' : `Empezar con ${online} jugadores`;
+    const sz = sizeNow(online);
+    if (host) {
+      if (sizeShown !== sz) { sizeShown = sz; seg($('#roomSize'), Object.entries(SIZES).map(([k, z]) => [k, z.label]), () => sizeNow(online), v => {
+        quiet(fb.set(`rooms/${code}/config/size`, v)); quiet(fb.set(`rooms/${code}/config/auto`, false)); room.config.size = v; room.config.auto = false; sizeShown = v; showRoomButtons(); }); }
+      $('#roomSize').hidden = false;
+    } else { $('#roomSize').hidden = true; sizeShown = ''; }
+    $('#roomSizeNote').textContent = host
+      ? (room.config.auto ? 'Se ajusta solo: 4 × 4 para 2 jugadores, 6 × 6 para 3 o 4. Toca uno para fijarlo.' : 'Tablero fijado por ti.')
+      : `El creador juega en ${SIZES[sz].label}.`;
     const hn = namesOf(room, 1)[0];
     $('#roomWait').hidden = false;
     $('#hostStatus').textContent = host ? (online < 2 ? 'Esperando jugadores… (hasta 4)' : online < MAXP ? 'Puedes empezar ya o esperar a más jugadores' : 'Sala llena: ¡a jugar!') : `Esperando que ${hn} inicie la partida…`;

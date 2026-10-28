@@ -4,7 +4,7 @@
       "$code": {
         ".read": "auth != null",
         ".write": "auth != null && (!data.exists() || data.child('host').val() === auth.uid || data.child('members').child(auth.uid).exists() || (data.child('game').child('status').val() === 'waiting' && newData.child('members').child(auth.uid).exists()))",
-        ".validate": "$code.matches(/^[A-HJ-NP-Z2-9]{6}$/) && newData.hasChildren(['host', 'createdAt', 'members']) && newData.child('members').numChildren() <= 4",
+        ".validate": "$code.matches(/^[A-HJ-NP-Z2-9]{6}$/) && newData.hasChildren(['host', 'createdAt', 'members'])",
         "host": {
           ".validate": "newData.isString() && (data.exists() ? newData.val() === data.val() : newData.val() === auth.uid)"
         },
