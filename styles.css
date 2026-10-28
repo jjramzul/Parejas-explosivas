@@ -460,3 +460,5 @@ h1.wob{animation:wob .35s var(--spring)}
 .rsize{width:100%;display:grid;gap:8px;text-align:left}
 .rsize .lbl{margin:0}
 .rsize .pnote{margin:0}
+.rchk{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0 2px;font-size:15px;color:var(--text);cursor:pointer;min-height:44px}
+.rchk input{width:22px;height:22px;accent-color:var(--ui);flex:none}

@@ -11,16 +11,16 @@ const pIcon = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 
 /* ====================== Poderes ====================== */
 const POWERS = {
-  vision:  { name: 'Visión',   desc: 'Revela cartas al azar por un instante (3 en 4×4, 5 en 6×6).', icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>' },
-  freeze:  { name: 'Congelar', desc: 'Tu rival pierde su próximo turno. Úsalo cuando quieras: si aún no ha elegido carta en su turno, lo pierde de inmediato.', icon: '<path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7"/><path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2"/>' },
-  shuffle: { name: 'Barajar',  desc: 'Mezcla de lugar las cartas sin pareja.', icon: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>' },
-  magnet:  { name: 'Imán',     desc: 'Ves dónde está la pareja de tu carta. Úsalo antes de voltear o con una carta ya volteada.', icon: '<path d="M5 3v9a7 7 0 0 0 14 0V3"/><path d="M4 7.5h4M16 7.5h4"/>' },
-  swap:    { name: 'Intercambio', desc: 'Eliges 2 cartas y se cambian de lugar. Parpadean 2 señuelos más para despistar.', icon: '<path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/>' },
-  compass: { name: 'Brújula',  desc: 'Eliges una carta (se voltea) y se marcan 2 cartas: una es su pareja. También sirve con una carta ya volteada.', icon: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>' },
-  mirror:  { name: 'Espejo',   desc: 'Copias el último poder que usó tu rival.', icon: '<path d="M12 3v18"/><path d="M8 7 3 12l5 5Z"/><path d="m16 7 5 5-5 5Z"/>' },
-  short:   { name: 'Memoria corta', desc: 'Durante tu turno, las cartas que voltees se ven la mitad del tiempo para los demás.', icon: '<path d="M6 3h12M6 21h12"/><path d="M7 3c0 5 3 5.5 5 9-2 3.5-5 4-5 9"/><path d="M17 3c0 5-3 5.5-5 9 2 3.5 5 4 5 9"/>' },
-  quarantine: { name: 'Cuarentena', desc: 'Eliges una carta y queda aislada: nadie la voltea hasta tu siguiente turno. Úsala cuando quieras, con cartas sin voltear.', icon: '<rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>' },
-  shield:  { name: 'Escudo',   desc: 'Bloquea el próximo poder de tu rival. Actívalo cuando quieras, incluso en su turno. Dura 1 ronda.', icon: '<path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6l-8-3Z"/><path d="m9 12 2 2 4-4"/>' }
+  vision:  { name: 'Visión',   desc: 'Ves cartas al azar por un instante.', icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>' },
+  freeze:  { name: 'Congelar', desc: 'Tu rival pierde su turno. Si aún no voltea, lo pierde ya.', icon: '<path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7"/><path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2"/>' },
+  shuffle: { name: 'Barajar',  desc: 'Mezcla las cartas sin pareja.', icon: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>' },
+  magnet:  { name: 'Imán',     desc: 'Ves la pareja de tu carta, antes o después de voltearla.', icon: '<path d="M5 3v9a7 7 0 0 0 14 0V3"/><path d="M4 7.5h4M16 7.5h4"/>' },
+  swap:    { name: 'Intercambio', desc: 'Cambias 2 cartas de lugar; 2 señuelos parpadean.', icon: '<path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/>' },
+  compass: { name: 'Brújula',  desc: 'Voltea una carta y marca 2: una es su pareja.', icon: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>' },
+  mirror:  { name: 'Espejo',   desc: 'Copias el último poder de tu rival.', icon: '<path d="M12 3v18"/><path d="M8 7 3 12l5 5Z"/><path d="m16 7 5 5-5 5Z"/>' },
+  short:   { name: 'Memoria corta', desc: 'En tu turno, los demás ven tus cartas la mitad del tiempo.', icon: '<path d="M6 3h12M6 21h12"/><path d="M7 3c0 5 3 5.5 5 9-2 3.5-5 4-5 9"/><path d="M17 3c0 5-3 5.5-5 9 2 3.5 5 4 5 9"/>' },
+  quarantine: { name: 'Cuarentena', desc: 'Aíslas una carta hasta tu siguiente turno.', icon: '<rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>' },
+  shield:  { name: 'Escudo',   desc: 'Bloquea el próximo poder de tu rival. Dura 1 ronda.', icon: '<path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6l-8-3Z"/><path d="m9 12 2 2 4-4"/>' }
 };
 const PIDS = Object.keys(POWERS);
 /* Memoria de la máquina:
@@ -36,10 +36,10 @@ const SIZES = {
   '16': { cols: 4, rows: 4, pairs: 8,  vision: 3, label: '4 × 4' },
   '36': { cols: 6, rows: 6, pairs: 18, vision: 5, label: '6 × 6' }
 };
-const pdesc = (id, G) => id === 'vision' && G ? `Revela ${G.size.vision} cartas al azar por un instante.`
-  : id === 'shuffle' && G && G.online ? 'Mezcla las cartas sin pareja. Úsalo en tu turno o en el del rival, antes de que voltee.'
-  : G && G.online && G.players.length > 2 && id === 'freeze' ? 'Eliges a un jugador: pierde su próximo turno.'
-  : G && G.online && G.players.length > 2 && id === 'mirror' ? 'Copias el último poder que usó otro jugador.'
+const pdesc = (id, G) => id === 'vision' && G ? `Ves ${G.size.vision} cartas al azar por un instante.`
+  : id === 'shuffle' && G && G.online ? 'Mezcla las cartas sin pareja. También en turno ajeno.'
+  : G && G.online && G.players.length > 2 && id === 'freeze' ? 'Eliges a un jugador: pierde su turno.'
+  : G && G.online && G.players.length > 2 && id === 'mirror' ? 'Copias el último poder de otro jugador.'
   : POWERS[id].desc;
 
 /* ====================== Temas (SVG animados) ====================== */
@@ -289,9 +289,9 @@ function showView(id) {
   const el = $('#' + id); void el.offsetWidth; el.classList.add('in');
 }
 
-function startGame(rematch) {
+function startGame(rematch, reroll) {
   const th = theme(), ai = cfg.mode === 'ai';
-  const pool = cfg.powerMode === 'random' ? shuf(PIDS).slice(0, 3) : PIDS.filter(p => cfg.picked.includes(p));
+  const pool = rematch && S && !reroll ? S.pool.slice() : (rematch && reroll) || cfg.powerMode === 'random' ? shuf(PIDS).slice(0, 3) : PIDS.filter(p => cfg.picked.includes(p));
   const size = SIZES[cfg.size];
   const syms = shuf([...Array(th.icons.length).keys()]).slice(0, size.pairs);
   const deck = shuf([...syms, ...syms]);
@@ -809,7 +809,7 @@ scrim.addEventListener('click', ev => {
     const k = act.dataset.act;
     if (k === 'pass' || k === 'passoff') { if (S && S.passWait) endPass(S, k === 'passoff'); return; }
     if (k === 'close' && S && S.passWait) { showPass(S); return; }
-    if (k === 'rematch') { if (S && S.online) { closeSheet(); Online.rematch(); } else startGame(true); }
+    if (k === 'rematch') { const rr = !!(sheet.querySelector('#rerollPw') || { checked: true }).checked; if (S && S.online) { closeSheet(); Online.rematch(rr); } else startGame(true, rr); }
     else if (k === 'menu' || k === 'leave') { if (S && S.online) Online.leave(); S = null; closeSheet(); showView('home'); }
     else closeSheet();
     return;
@@ -849,6 +849,7 @@ async function finish(G) {
     <div class="res r${N}">${(N > 2 ? order : [0, 1]).map(i => `<div class="o${i}${winners.includes(i) && !(tie && N === 2) ? ' w' : ''}"><small>${G.players[i].name}</small><b>${G.players[i].score}</b></div>`).join('')}</div>
     <div class="stats">${rows}</div>
     <p class="series dur">Duración ${mm}:${ss}</p>${series}
+    <label class="rchk"><input type="checkbox" id="rerollPw" checked><span>Sortear poderes de nuevo</span></label>
     <div class="acts"><button class="btn" data-act="rematch">Revancha</button><button class="btn sec" data-act="menu">Menú</button></div>`, true);
 }
 

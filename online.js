@@ -124,7 +124,7 @@ const Online = (() => {
     try {
       await connect();
       const pool = cfg.powerMode === 'random' ? shuf(PIDS).slice(0, 3) : PIDS.filter(p => cfg.picked.includes(p));
-      const config = { size: cfg.size, theme: cfg.theme, pool, auto: true };   // auto: el tablero se ajusta solo a los jugadores hasta que el creador lo elija
+      const config = { size: cfg.size, theme: cfg.theme, pool, auto: false };   // se respeta el tablero que eligió el creador (puede cambiarlo en la sala de espera)
       for (let i = 0; i < 5 && !code; i++) {
         const c = genCode();
         const r = await fb.tx('rooms/' + c, cur => cur === null ? {
@@ -603,14 +603,16 @@ const Online = (() => {
     mine.peeking--;
   }
 
-  async function rematch() {
+  async function rematch(reroll) {
     if (!code || !room) return;
     try {
-      await fb.tx(gp(), cur => {
-        if (!cur) return cur;
-        const g = norm(cur);
+      await fb.tx('rooms/' + code, cur => {
+        if (!cur || !cur.game) return cur;
+        const g = norm(cur.game);
         if (g.status !== 'over') return;
-        return newGame(room.config, g.round + 1, g.ev ? g.ev.id : 0, g.n);
+        if (reroll) cur.config.pool = shuf(PIDS).slice(0, 3);          // nuevos poderes para la revancha
+        cur.game = newGame(cur.config, g.round + 1, g.ev ? g.ev.id : 0, g.n);
+        return cur;
       });
     } catch (e) { toast('Sin conexión: intenta de nuevo'); }
   }
@@ -741,7 +743,7 @@ const Online = (() => {
       $('#roomSize').hidden = false;
     } else { $('#roomSize').hidden = true; sizeShown = ''; }
     $('#roomSizeNote').textContent = host
-      ? (room.config.auto ? 'Se ajusta solo: 4 × 4 para 2 jugadores, 6 × 6 para 3 o 4. Toca uno para fijarlo.' : 'Tablero fijado por ti.')
+      ? (sz === '16' && online >= 3 ? 'Con 3 o 4 jugadores se recomienda 6 × 6. Toca para cambiarlo.' : 'Toca para cambiar el tablero.')
       : `El creador juega en ${SIZES[sz].label}.`;
     const hn = namesOf(room, 1)[0];
     $('#roomWait').hidden = false;

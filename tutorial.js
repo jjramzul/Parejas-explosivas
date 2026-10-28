@@ -14,7 +14,7 @@ const Tutorial = (() => {
     { t: 'Poderes', p: 'Cada partida trae 3 poderes, sorteados o elegidos. Cada jugador usa cada uno una sola vez, al inicio de su turno.',
       art: `<div class="tart pw">${PIDS.map(id => `<span class="tpi" title="${POWERS[id].name}">${pIcon(POWERS[id].icon)}</span>`).join('')}</div>` },
     { t: 'Los 10 poderes', p: '', list: true },
-    { t: 'En línea', p: 'Crea una sala y comparte el código o el QR: juegan hasta 4. Tienes 15 segundos por jugada; si se acaban, pierdes el turno. Barajar se puede usar también en el turno de otro, antes de que voltee.',
+    { t: 'En línea', p: 'Crea una sala y comparte el código o el QR: juegan hasta 4. Tienes 15 segundos por jugada; si se acaban, pierdes el turno. Algunos poderes (Escudo, Barajar, Intercambio, Congelar, Cuarentena) también valen en el turno de otro.',
       art: `<div class="tart">${card(1)}${card(3)}${card(6)}${card(8)}</div>` }
   ];
 
