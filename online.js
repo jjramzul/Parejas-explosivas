@@ -24,7 +24,6 @@ const Online = (() => {
   let fb = null, uid = null;                          // backend y usuario anónimo
   let code = null, seat = -1, room = null, G = null;  // sala actual, mi asiento (0 = creador)
   let unsub = [], lastEv = 0, timer = null, timerKey = '', presWas = [];
-  const hideTimers = new Map();                       // cartas que se ocultan antes en pantalla (Memoria corta)
   const TURN_MS = window.PCP_TURN_MS || 15000;        // tiempo máximo por jugada
   let clockTimer = null, clockKey = '', ticker = null, warned = '', prev = null, lastTick = null;
 
@@ -303,7 +302,7 @@ const Online = (() => {
     };
     lastEv = g.ev ? g.ev.id : 0;                      // no repetir avisos viejos
     setupReactions();
-    prev = null; presWas = []; hideTimers.forEach(clearTimeout); hideTimers.clear();
+    prev = null; presWas = [];
     clearTimeout(timer); timerKey = ''; clearTimeout(clockTimer); clockKey = '';
     mountGame(G);
     clearInterval(ticker); ticker = setInterval(tick, 250);
@@ -318,14 +317,10 @@ const Online = (() => {
       const c = G.cards[i]; if (!c || c.sym === sym) return;
       c.sym = sym; c.el.querySelector('.front').innerHTML = svgOf(G.th.icons[sym]);
     });
-    /* Memoria corta de quien tiene el turno: los demás ven sus cartas la mitad del tiempo (solo en pantalla; el estado no cambia) */
+    /* Cegera de quien tiene el turno: los demás no ven las cartas que voltea (solo en pantalla; el estado no cambia) */
     G.hidden = G.hidden || new Set();
     const hideOn = g.status === 'playing' && g.turn !== seat && !!g.short[g.turn];
-    if (!hideOn) { hideTimers.forEach(clearTimeout); hideTimers.clear(); G.hidden.clear(); }
-    else {
-      g.open.forEach(i => { if (!hideTimers.has(i)) hideTimers.set(i, setTimeout(() => { if (G) { G.hidden.add(i); apply(); } }, 450)); });
-      for (const [i, t] of [...hideTimers]) if (!g.open.includes(i)) { clearTimeout(t); hideTimers.delete(i); G.hidden.delete(i); }
-    }
+    G.hidden.clear(); if (hideOn) g.open.forEach(i => G.hidden.add(i));
     const fresh = [];
     g.owner.forEach((o, i) => { const c = G.cards[i]; if (o >= 0 && !c.matched) fresh.push(c); c.owner = o; c.matched = o >= 0; c.up = g.open.includes(i) && !G.hidden.has(i); });
     G.turn = g.turn; G.status = g.status; G.me = seat;
@@ -366,12 +361,9 @@ const Online = (() => {
       if (eff === 'freeze') toast(ev.now ? (vic === seat ? 'Te congelaron: pierdes este turno' : `${nm(vic)} pierde su turno`) : vic === seat ? 'Te congelaron: pierdes tu próximo turno' : `${nm(vic)} perderá su próximo turno`);
       else if (eff === 'shield') toast(mine ? 'Activaste tu Escudo (dura 1 ronda)' : `${who} activó su Escudo`);
       else if (eff === 'shuffle') { toast(mine ? 'Barajaste las cartas' : `${who} barajó las cartas`); shuffleFx(); }
-      else if (eff === 'swap') {
-        toast(mine ? 'Usaste Intercambio' : `${who} usó Intercambio: ¡2 de las 4 cartas que parpadean se cambiaron!`);
-        if (ev.cells && G) { const cs = ev.cells.map(i => G.cards[i]).filter(Boolean); G.peeking++; G.busy = true; blinkCards(cs).then(() => { if (G) { G.peeking--; apply(); } }); }
-      }
+      else if (eff === 'swap') toast(mine ? 'Intercambio: tu carta se cambió por otra al azar' : `${who} usó Intercambio: una carta cambió de lugar`);
       else if (eff === 'quarantine') toast(mine ? 'Aislaste una carta hasta tu próximo turno' : `${who} aisló una carta hasta su próximo turno`);
-      else if (eff === 'short') toast(mine ? 'Memoria corta: los demás verán tus cartas la mitad del tiempo' : `${who} usó Memoria corta: sus cartas se ven la mitad del tiempo`);
+      else if (eff === 'short') toast(mine ? 'Cegera: los demás no verán tus cartas este turno' : `${who} usó Cegera: no verás sus cartas este turno`);
       else if (!mine && ev.pid !== 'mirror') toast(`${who} usó ${P.name}`);
     } else if (ev.kind === 'blocked') {
       toast(vic === seat ? `Tu escudo bloqueó ${P.name} de ${who}` : mine ? `El escudo de ${nm(vic)} bloqueó ${P.name}` : `El escudo de ${nm(vic)} bloqueó a ${who}`);
@@ -402,7 +394,7 @@ const Online = (() => {
   }
   /* Máscara de jugadores desconectados (se salta su turno). Se calcula con lo último que vio este cliente. */
   const offMask = n => Array.from({ length: n }, (_, i) => i !== seat && isOff(room, i));
-  /* Cambio de turno: Memoria corta dura un turno; Escudo y Cuarentena se acaban al empezar el siguiente turno de su dueño.
+  /* Cambio de turno: Cegera dura un turno; Escudo y Cuarentena se acaban al empezar el siguiente turno de su dueño.
      Se salta a los desconectados y a los congelados (el congelado pierde ese turno y se descongela). Devuelve los congelados saltados. */
   function passTurn(g, was, off) {
     const n = g.n, skipped = [];
@@ -563,10 +555,11 @@ const Online = (() => {
           const syms = shuf(free.map(i => g.deck[i]));
           free.forEach((i, k) => { g.deck[i] = syms[k]; });
         }
-        if (eff === 'swap') {
-          const [x, y] = targets; [g.deck[x], g.deck[y]] = [g.deck[y], g.deck[x]];
-          const dec = shuf(g.owner.map((o, i) => (o < 0 && !targets.includes(i)) ? i : -1).filter(i => i >= 0)).slice(0, 2);
-          ev.cells = [x, y, ...dec].sort((p, q) => p - q);   // ordenadas: no delatan cuáles son las elegidas
+        if (eff === 'swap') {                                  // la otra carta es al azar y no se publica cuál fue
+          const x = targets[0], others = g.owner.map((ow, k) => (ow < 0 && k !== x && !g.open.includes(k) && g.quar[k] < 0) ? k : -1).filter(k => k >= 0);
+          if (!others.length) return;
+          const y = others[Math.floor(Math.random() * others.length)];
+          [g.deck[x], g.deck[y]] = [g.deck[y], g.deck[x]];
         }
         g.last[seat] = eff; g.lastAt[seat] = id;
         g.ev = ev;
@@ -668,7 +661,7 @@ const Online = (() => {
       else if (presPath) quiet(fb.set(presPath, false));
     }
     presPath = '';
-    hideTimers.forEach(clearTimeout); hideTimers.clear();
+   
     teardownReactions(); lastReact = 0; reactCool = 0;
     code = null; seat = -1; room = null; G = null;
     try { if (location.search) history.replaceState(null, '', location.pathname); } catch (e) {}

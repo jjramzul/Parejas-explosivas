@@ -16,7 +16,7 @@ Juego de memoria con poderes (antes "Parejas con poderes"): 2 jugadores en el mi
 | `database.rules.json` | Reglas de seguridad de Realtime Database |
 | `firebase.json`, `.firebaserc` | Configuración para publicar con Firebase Hosting |
 
-## Probar en tu computador
+## Probar
 
 - Local y contra la máquina: abre `index.html` directamente.
 - En línea: ábrelo con **Live Server** de VS Code (`http://127.0.0.1:5500`) y usa dos **pestañas**: cada pestaña es un jugador distinto. Crea la sala en una y únete con el código en la otra.
@@ -37,8 +37,8 @@ Queda en: https://parejas-explosivas.web.app
 - Cada jugador entra con **inicio de sesión anónimo** (sin registrarse).
 - La sala vive en `rooms/CÓDIGO` de Realtime Database; ambos escuchan ese nodo.
 - Cada jugada se escribe con una **transacción**, así dos toques al tiempo no rompen el estado.
-- Visión, Imán y Brújula solo se muestran en la pantalla de quien los usa; Congelar, Escudo, Barajar, Intercambio, Cuarentena, Memoria corta y Espejo cambian el estado compartido (`quar`, `short`, `last` en `game`).
-- Poderes (10, se juegan 3 por partida): Visión, Congelar (se usa en cualquier momento; si el rival aún no eligió carta en su turno, lo pierde de inmediato), Barajar, Imán (también con una carta ya volteada), Escudo (dura 1 ronda; se activa en cualquier momento, también en el turno del rival), Intercambio (se usa en cualquier momento, con cartas sin voltear), Brújula (voltea la carta elegida; también con una ya volteada), Espejo, Memoria corta (en tu turno, los demás ven las cartas que volteas la mitad del tiempo) y Cuarentena (se usa en cualquier momento; hasta tu siguiente turno).
+- Visión, Imán y Brújula solo se muestran en la pantalla de quien los usa; Congelar, Escudo, Barajar, Intercambio, Cuarentena, Cegera y Espejo cambian el estado compartido (`quar`, `short`, `last` en `game`).
+- Poderes (10, se juegan 3 por partida): Visión, Congelar (se usa en cualquier momento; si el rival aún no eligió carta en su turno, lo pierde de inmediato), Barajar, Imán (también con una carta ya volteada), Escudo (dura 1 ronda; se activa en cualquier momento, también en el turno del rival), Intercambio (se usa en cualquier momento: eliges una carta sin voltear y se cambia por otra al azar; nadie ve cuál), Brújula (voltea la carta elegida; también con una ya volteada), Espejo, Cegera (antes de elegir carta; en ese turno los demás no ven las cartas que volteas. No aparece en 2 jugadores con una sola pantalla) y Cuarentena (se usa en cualquier momento; hasta tu siguiente turno).
 - **Tiempo por jugada: 15 s** (`TURN_MS` en `online.js`). Se mide con la hora del servidor de Firebase, así ambos ven el mismo reloj. Si se acaba, el turno pasa al siguiente jugador conectado; si el jugador de turno se desconecta, los demás cierran el turno 2 s después.
 - **Barajar en el turno del rival:** se puede usar mientras el jugador de turno no haya volteado ninguna carta. Si ambos tocan casi al tiempo, Firebase acepta solo lo primero: si el de turno volteó antes, la barajada se rechaza y el poder no se gasta.
 - La presencia usa `onDisconnect`: si alguien se cae, verás "Desconectado" y se salta su turno.

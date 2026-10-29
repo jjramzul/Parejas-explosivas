@@ -11,16 +11,16 @@ const pIcon = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 
 /* ====================== Poderes ====================== */
 const POWERS = {
-  vision:  { name: 'Visión',   desc: 'Ves cartas al azar por un instante.', icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>' },
-  freeze:  { name: 'Congelar', desc: 'Tu rival pierde su turno. Si aún no voltea, lo pierde ya.', icon: '<path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7"/><path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2"/>' },
-  shuffle: { name: 'Barajar',  desc: 'Mezcla las cartas sin pareja.', icon: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>' },
-  magnet:  { name: 'Imán',     desc: 'Ves la pareja de tu carta, antes o después de voltearla.', icon: '<path d="M5 3v9a7 7 0 0 0 14 0V3"/><path d="M4 7.5h4M16 7.5h4"/>' },
-  swap:    { name: 'Intercambio', desc: 'Cambias 2 cartas de lugar; 2 señuelos parpadean.', icon: '<path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/>' },
-  compass: { name: 'Brújula',  desc: 'Voltea una carta y marca 2: una es su pareja.', icon: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>' },
-  mirror:  { name: 'Espejo',   desc: 'Copias el último poder de tu rival.', icon: '<path d="M12 3v18"/><path d="M8 7 3 12l5 5Z"/><path d="m16 7 5 5-5 5Z"/>' },
-  short:   { name: 'Memoria corta', desc: 'En tu turno, los demás ven tus cartas la mitad del tiempo.', icon: '<path d="M6 3h12M6 21h12"/><path d="M7 3c0 5 3 5.5 5 9-2 3.5-5 4-5 9"/><path d="M17 3c0 5-3 5.5-5 9 2 3.5 5 4 5 9"/>' },
-  quarantine: { name: 'Cuarentena', desc: 'Aíslas una carta hasta tu siguiente turno.', icon: '<rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>' },
-  shield:  { name: 'Escudo',   desc: 'Bloquea el próximo poder de tu rival. Dura 1 ronda.', icon: '<path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6l-8-3Z"/><path d="m9 12 2 2 4-4"/>' }
+  vision:  { name: 'Visión',   desc: 'Ves cartas al azar por un instante', icon: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>' },
+  freeze:  { name: 'Congelar', desc: 'Tu rival pierde su turno si aún no voltea', icon: '<path d="M12 2v20M4.9 7l14.2 10M4.9 17 19.1 7"/><path d="m9.5 4 2.5 2 2.5-2M9.5 20l2.5-2 2.5 2"/>' },
+  shuffle: { name: 'Barajar',  desc: 'Mezcla las cartas sin pareja', icon: '<path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/>' },
+  magnet:  { name: 'Imán',     desc: 'Ves la pareja de tu carta por un momento', icon: '<path d="M5 3v9a7 7 0 0 0 14 0V3"/><path d="M4 7.5h4M16 7.5h4"/>' },
+  swap:    { name: 'Intercambio', desc: 'Una carta se cambia por otra al azar', icon: '<path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/>' },
+  compass: { name: 'Brújula',  desc: 'Te señala 2 cartas, 1 es la pareja', icon: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>' },
+  mirror:  { name: 'Espejo',   desc: 'Copias el último poder de tu rival', icon: '<path d="M12 3v18"/><path d="M8 7 3 12l5 5Z"/><path d="m16 7 5 5-5 5Z"/>' },
+  short:   { name: 'Cegera', desc: 'Los demás no ven las que volteas en tu turno', icon: '<path d="M3 3l18 18"/><path d="M10.6 6.2A9.8 9.8 0 0 1 12 6c5 0 8.5 4 10 6-.7 1-1.8 2.3-3.2 3.4M6.5 7.6C4.6 9 3.2 10.7 2 12c1.5 2 5 6 10 6 1.6 0 3-.4 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>' },
+  quarantine: { name: 'Cuarentena', desc: 'Aíslas una carta hasta tu siguiente turno', icon: '<rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>' },
+  shield:  { name: 'Escudo',   desc: 'Bloquea el próximo poder de tu rival', icon: '<path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6l-8-3Z"/><path d="m9 12 2 2 4-4"/>' }
 };
 const PIDS = Object.keys(POWERS);
 /* Memoria de la máquina:
@@ -217,7 +217,7 @@ function applyTheme() {
 }
 function renderPowers() {
   const pick = cfg.powerMode === 'pick';
-  $('#plist').innerHTML = PIDS.map(id => {
+  $('#plist').innerHTML = PIDS.filter(id => !(id === 'short' && cfg.mode === 'pvp')).map(id => {
     const p = POWERS[id], on = cfg.picked.includes(id), full = cfg.picked.length >= 3 && !on;
     const inner = `<span class="pi">${pIcon(p.icon)}</span><span class="pt"><b>${p.name}</b><small>${p.desc}</small></span>` +
       (pick ? `<span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>` : '');
@@ -302,7 +302,8 @@ function showView(id) {
 
 function startGame(rematch, reroll) {
   const th = theme(), ai = cfg.mode === 'ai';
-  const pool = rematch && S && !reroll ? S.pool.slice() : (rematch && reroll) || cfg.powerMode === 'random' ? shuf(PIDS).slice(0, 3) : PIDS.filter(p => cfg.picked.includes(p));
+  const PL = cfg.mode === 'pvp' ? PIDS.filter(p => p !== 'short') : PIDS;   // Cegera no tiene sentido con una sola pantalla
+  const pool = rematch && S && !reroll ? S.pool.slice() : (rematch && reroll) || cfg.powerMode === 'random' ? shuf(PL).slice(0, 3) : PL.filter(p => cfg.picked.includes(p));
   const size = SIZES[cfg.size];
   const syms = shuf([...Array(th.icons.length).keys()]).slice(0, size.pairs);
   const deck = shuf([...syms, ...syms]);
@@ -427,7 +428,7 @@ const myTurn = G => G.online ? G.turn === G.me && G.status === 'playing' : !isAI
 
 /* ---- Poderes con objetivo, cuarentena y marcas ---- */
 const sfxOf = p => ({ swap: 'shuffle', compass: 'vision', mirror: 'shield', short: 'tick', quarantine: 'freeze' })[p] || p;
-const NEED = { swap: 2, compass: 1, quarantine: 1 };                       // cartas que hay que elegir
+const NEED = { swap: 1, compass: 1, quarantine: 1 };                       // cartas que hay que elegir
 const lastOf = (G, u) => { let b = -1; G.players.forEach((p, i) => { if (i !== u && p.last && (b < 0 || (p.lastAt || 0) > (G.players[b].lastAt || 0))) b = i; }); return b < 0 ? null : G.players[b].last; };
 const effOf = (G, pid, u) => pid === 'mirror' ? lastOf(G, u) : pid;     // el Espejo copia el último poder que usó otro jugador
 const VICTIM = ['freeze'];
@@ -440,11 +441,12 @@ const locked = (G, c) => c.quar >= 0 && !c.matched && !c.up && freeCards(G).filt
 function avail(G, pid, u) {
   const eff = effOf(G, pid, u); if (!eff) return false;
   const n = eff === 'compass' ? (G.first ? 2 : 3) : NEED[eff] || 0; if (!n) return true;
-  return candidates(G, eff).length >= n;
+  return candidates(G, eff).length >= Math.max(n, eff === 'swap' ? 2 : 0);   // Intercambio necesita además otra carta libre
 }
 const actor = G => G.online ? G.me : (G.ai && isAI(G, G.turn) ? 0 : G.turn);   // quién usa el poder (en línea: yo; contra la máquina: siempre la persona)
 function can(G, pid) {
   if (G.over || G.tg) return false;
+  if (effOf(G, pid, G.online ? G.me : G.turn) === 'short' && (G.first !== null || G.cards.some(c => c.up && !c.matched))) return false;   // Cegera: solo antes de elegir carta
   if ((pid === 'swap' || pid === 'quarantine') && (G.online || G.ai)) {   // Intercambio y Cuarentena valen en cualquier momento (con cartas que no estén volteadas)
     if (G.online) return G.status === 'playing' && !G.pending && !G.peeking && !G.players[G.me].used[pid] && avail(G, pid, G.me);
     return !G.passWait && !G.busy && !G.magnet && !G.players[0].used[pid] && avail(G, pid, 0);
@@ -511,7 +513,7 @@ function paintExtras() {
     el.classList.toggle('pk', !!G.tg && cand.includes(c) && !G.tg.got.includes(c));
     if (c.quar >= 0 && !c.matched) el.setAttribute('aria-label', el.getAttribute('aria-label') + ' (aislada)');
   });
-  G.players.forEach((p, i) => { if (p.short) { const bd = document.querySelector('#pl' + i + ' .bd'); if (bd) bd.insertAdjacentHTML('beforeend', '<span class="badge sm">Memoria corta</span>'); } });
+  G.players.forEach((p, i) => { if (p.short) { const bd = document.querySelector('#pl' + i + ' .bd'); if (bd) bd.insertAdjacentHTML('beforeend', '<span class="badge sm">Cegera</span>'); } });
   const tc = $('#tcancel'); if (tc) tc.hidden = !G.tg;
   document.querySelectorAll('.pill').forEach((el, i) => el.classList.toggle('pk', !!G.tg && G.tg.stage === 'victim' && i !== G.me));
   if (G.tg) {
@@ -523,7 +525,7 @@ function syncMain() {
   const G = S; if (!G) return;
   G.cards.forEach((c, i) => {
     const el = c.el;
-    el.classList.toggle('up', c.up); el.classList.toggle('done', c.matched);
+    el.classList.toggle('up', c.up && !(G.ai && isAI(G, G.turn) && G.players[G.turn].short)); el.classList.toggle('done', c.matched);   // Cegera de la máquina: sus cartas no se ven
     [0, 1, 2, 3].forEach(k => el.classList.toggle('o' + k, c.owner === k));
     el.setAttribute('aria-label', c.up || c.matched ? `Carta ${i + 1}: ${G.th.names[c.sym]}` : `Carta ${i + 1}, boca abajo`);
   });
@@ -572,7 +574,7 @@ function onCard(c) {
 }
 
 function see(G, c) {
-  if (!G.ai || Math.random() >= G.pRem * (!isAI(G, G.turn) && G.players[G.turn].short ? .5 : 1)) return;   // Memoria corta del humano: la máquina recuerda la mitad
+  if (!G.ai || (!isAI(G, G.turn) && G.players[G.turn].short) || Math.random() >= G.pRem) return;   // Cegera del humano: la máquina no ve sus cartas
   G.mem.delete(c); G.mem.set(c, c.sym);                    // lo más reciente queda al final
   while (G.mem.size > G.cap) G.mem.delete(G.mem.keys().next().value); // olvida lo más viejo
 }
@@ -599,7 +601,7 @@ async function pick(G, c) {
     }
     sync(); return;
   }
-  const a = G.first, k = G.players[G.turn].short && !(G.ai && !isAI(G, G.turn)) ? .5 : 1;   // Memoria corta: las cartas se ven la mitad del tiempo
+  const a = G.first, k = 1;
   G.busy = true; sync();
   await sleep(750 * k); if (G !== S) return;
   if (a.sym === c.sym) {
@@ -621,7 +623,7 @@ async function pick(G, c) {
 function endTurn(G) {
   G.epoch = (G.epoch | 0) + 1;
   const was = G.turn, next = 1 - was, nx = G.players[next];
-  G.players[was].short = false; G.marks = null;      // Memoria corta dura un turno
+  G.players[was].short = false; G.marks = null;      // Cegera dura un turno
   if (nx.frozen) { nx.frozen = false; toast(`${nx.name} pierde su turno`); relQuar(G, was); G.players[was].shield = false; }
   else { G.turn = next; relQuar(G, next); G.players[next].shield = false; }   // el Escudo dura 1 ronda: se acaba al empezar tu siguiente turno            // las cartas aisladas se liberan al empezar el turno de quien las aisló
   G.magnet = false; sync(); maybeAI(G);
@@ -681,13 +683,12 @@ async function runEffect(G, eff, ids, ui) {
   } else if (eff === 'shield') {
     me.shield = true; toast(`${me.name} activó su Escudo`);
   } else if (eff === 'swap') {
-    const [x, y] = ids.map(byId); if (!x || !y) return;
-    G.busy = true; sync(); toast(`${me.name} usó Intercambio`);
-    const dec = shuf(G.cards.filter(c => !c.matched && !c.up && c !== x && c !== y)).slice(0, 2);
-    const four = [x, y, ...dec];
-    await blinkCards(four); if (G !== S) return;
+    const x = byId(ids[0]); if (!x) return;
+    const y = rnd(candidates(G, eff).filter(c => c !== x)); if (!y) return;   // la otra carta se elige al azar y no se muestra
+    G.busy = true; sync(); toast(isAI(G, ui) ? `${me.name} usó Intercambio` : 'Intercambio: tu carta se cambió por otra al azar');
     const sx = x.sym; setSym(G, x, y.sym); setSym(G, y, sx);
-    four.forEach(c => G.mem.delete(c));                // la máquina no sabe cuáles se cambiaron
+    G.mem.delete(x); G.mem.delete(y);                  // la máquina no sabe cuáles se cambiaron
+    await sleep(500); if (G !== S) return;
     G.busy = false;
   } else if (eff === 'compass') {
     const t = G.first || byId(ids[0]); if (!t) return;
@@ -700,7 +701,7 @@ async function runEffect(G, eff, ids, ui) {
     const t = byId(ids[0]); if (!t) return;
     t.quar = ui; toast(`${me.name} aisló una carta hasta su próximo turno`);
   } else if (eff === 'short') {
-    me.short = true; toast(isAI(G, ui) ? `${me.name} usó Memoria corta: sus cartas se ven la mitad del tiempo` : 'Memoria corta: los demás verán tus cartas la mitad del tiempo');
+    me.short = true; toast(isAI(G, ui) ? `${me.name} usó Cegera: no verás sus cartas este turno` : 'Cegera: la máquina no verá tus cartas este turno');
   }
 }
 
@@ -757,7 +758,7 @@ function aiQuarTarget(G) {
 }
 function aiTargets(G, pid) {
   const eff = effOf(G, pid, G.turn), cand = candidates(G, eff);
-  if (eff === 'swap') return shuf(cand).slice(0, 2).map(c => c.id);
+  if (eff === 'swap') return [rnd(cand).id];
   if (eff === 'quarantine') { const t = aiQuarTarget(G) || rnd(cand); return t ? [t.id] : []; }
   if (eff === 'compass') { const unk = cand.filter(c => !G.mem.has(c)); return [rnd(unk.length ? unk : cand).id]; }
   return [];
