@@ -1,24 +1,23 @@
-# Parejas explosivas
+# Boom Duo
 
-Juego de memoria con poderes (antes "Parejas con poderes"): 2 jugadores en el mismo dispositivo, contra la máquina o **en línea de 2 a 4 jugadores** (Firebase).
+Juego de memoria con poderes (antes "Parejas explosivas" y "Parejas con poderes"): 2 jugadores en el mismo dispositivo, contra la máquina o **en línea de 2 a 4 jugadores** (Firebase).
 
-## Archivos
+## Estructura
 
-| Archivo | Qué hace |
-|---|---|
-| `index.html` | Estructura: menú, sala en línea y juego |
-| `styles.css` | Diseño, animaciones y responsive |
-| `app.js` | Poderes, temas, tableros, lógica del juego e IA |
-| `online.js` | Modo en línea: salas, código/QR, sincronización con Firebase |
-| `audio.js` | Efectos de sonido y música generativa (Web Audio, sin archivos) |
-| `firebase-config.js` | Datos del proyecto de Firebase (no es secreto) |
-| `vendor/qrcode.js` | Generador de QR (qrcode-generator, licencia MIT) |
-| `database.rules.json` | Reglas de seguridad de Realtime Database |
-| `firebase.json`, `.firebaserc` | Configuración para publicar con Firebase Hosting |
+```
+www/                  ← el juego web (esto se publica en Firebase y se empaqueta en las apps)
+  index.html, styles.css, app.js, online.js, audio.js, tutorial.js, pwa.js, sw.js
+  firebase-config.js, manifest.webmanifest, icons/, vendor/qrcode.js
+assets/               ← icono y splash fuente (PNG) para generar los de iOS y Android
+ios/  android/        ← proyectos nativos (los crea `npm run setup`)
+capacitor.config.json ← id de la app, nombre y carpeta web
+package.json          ← scripts y Capacitor
+database.rules.json, firebase.json, .firebaserc ← Firebase
+```
 
-## Probar
+## Probar en tu computador
 
-- Local y contra la máquina: abre `index.html` directamente.
+- Local y contra la máquina: abre `www/index.html` directamente.
 - En línea: ábrelo con **Live Server** de VS Code (`http://127.0.0.1:5500`) y usa dos **pestañas**: cada pestaña es un jugador distinto. Crea la sala en una y únete con el código en la otra.
   (Abriendo el archivo directo, `file://`, Firebase puede rechazar el inicio de sesión.)
 
@@ -27,7 +26,7 @@ Juego de memoria con poderes (antes "Parejas con poderes"): 2 jugadores en el mi
 ```bash
 npm install -g firebase-tools   # una sola vez
 firebase login                  # una sola vez, con la cuenta dueña del proyecto
-firebase deploy                 # en esta carpeta: publica el juego y las reglas
+firebase deploy                 # en esta carpeta: publica `www/` y las reglas
 ```
 
 Queda en: https://parejas-explosivas.web.app
@@ -50,6 +49,25 @@ Queda en: https://parejas-explosivas.web.app
 Limitación conocida: el orden de las cartas está en la base de datos, así que alguien con las herramientas de desarrollador podría verlo. Evitarlo requiere Cloud Functions (plan Blaze).
 
 ## PWA (instalable y sin conexión)
-- `manifest.webmanifest` + `icons/` + `sw.js` + `pwa.js`.
-- Cada vez que cambies archivos del juego, sube `VERSION` en `sw.js` (por ejemplo `pcp-v2`) para que los celulares se actualicen.
-- Para Play Store: usar PWABuilder (pwabuilder.com) con la URL de Firebase Hosting y generar el paquete Android (TWA).
+- `www/manifest.webmanifest` + `www/icons/` + `www/sw.js` + `www/pwa.js`.
+- Cada vez que cambies archivos del juego, sube `VERSION` en `www/sw.js` (por ejemplo `pcp-v2`) para que los celulares se actualicen.
+
+## Apps iOS y Android (Capacitor)
+
+Requisitos en tu Mac: Node 22+, Xcode (iOS), Android Studio (Android) y CocoaPods (`brew install cocoapods`).
+
+```bash
+npm run setup      # una sola vez: instala, crea ios/ y android/, genera iconos y splash
+npm run ios        # copia www/ a la app y abre Xcode  → ▶ Run
+npm run android    # copia www/ a la app y abre Android Studio → ▶ Run
+```
+
+- Cada vez que cambies algo en `www/`, vuelve a correr `npm run ios` o `npm run android` (copia el código y abre el proyecto).
+- **Antes de `npm run setup`** revisa `appId` en `capacitor.config.json` (`com.boomduo.app`): debe ser único en las tiendas y no se cambia fácil después.
+- En la app nativa no se usa el service worker (los archivos ya van dentro) y la vibración y "Compartir" usan los plugins nativos. El enlace de la sala apunta a la web publicada (`PUBLIC_URL` en `www/online.js`).
+- Firebase funciona igual que en la web (inicio anónimo + Realtime Database).
+- Pendiente para después: Universal Links / App Links para que el enlace `?sala=` abra la app, política de privacidad y ficha de las tiendas.
+
+## Idiomas
+
+El código está escrito en español y `www/i18n.js` traduce lo que se ve en pantalla con un diccionario (hoy: Español e English). El idioma se cambia en el engranaje (arriba a la derecha) y se guarda en el dispositivo. Para añadir otro idioma: agrega su nombre en `NAMES` y un diccionario en `DICT` dentro de `i18n.js` (copia `EN` y `R` y traduce). Si añades textos nuevos en español, agrégalos también al diccionario.

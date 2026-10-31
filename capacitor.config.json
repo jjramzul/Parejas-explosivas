@@ -1,0 +1,8 @@
+{
+  "appId": "com.boomduo.app",
+  "appName": "Boom Duo",
+  "webDir": "www",
+  "backgroundColor": "#ffffff",
+  "server": { "androidScheme": "https" },
+  "ios": { "contentInset": "never" }
+}

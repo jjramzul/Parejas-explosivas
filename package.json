@@ -1,0 +1,25 @@
+{
+  "name": "boom-duo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Boom Duo: juego de memoria con poderes (web + iOS + Android con Capacitor)",
+  "scripts": {
+    "setup": "npm install && npx cap add ios && npx cap add android && npm run assets && npx cap sync",
+    "assets": "capacitor-assets generate --iconBackgroundColor '#3B9BFF' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#ffffff'",
+    "sync": "cap sync",
+    "ios": "cap sync ios && cap open ios",
+    "android": "cap sync android && cap open android",
+    "deploy": "firebase deploy --only hosting,database"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/haptics": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/share": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.0.0"
+  }
+}
