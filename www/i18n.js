@@ -20,7 +20,7 @@ const I18N = (() => {
     'Tú eliges tablero, tema y poderes; los demás se unen con el código o el QR (hasta 4 jugadores). Tú decides cuándo empezar.':
       'You choose the board, theme and powers; the others join with the code or QR (up to 4 players). You decide when to start.',
     'Instalar app': 'Install app', 'Corona de racha perfecta': 'Perfect streak crown', 'Configuración de la partida': 'Game setup',
-    'Ajustes': 'Settings', 'Información': 'Information', 'Idioma': 'Language', 'Música': 'Music', 'Efectos': 'Effects', 'Listo': 'Done',
+    'Ajustes': 'Settings', 'Política de privacidad': 'Privacy policy', 'Soporte': 'Support', 'Información': 'Information', 'Idioma': 'Language', 'Música': 'Music', 'Efectos': 'Effects', 'Listo': 'Done',
     'Apagar música': 'Turn music off', 'Encender música': 'Turn music on', 'Apagar efectos': 'Turn effects off', 'Encender efectos': 'Turn effects on',
     'Máximo 3 poderes por partida': 'Max 3 powers per game',
     'Máximo 3 por partida. Cada jugador usa cada poder una sola vez.': 'Max 3 per game. Each player uses each power only once.',
@@ -82,6 +82,7 @@ const I18N = (() => {
 
     // ---- Hojas
     'Cerrar': 'Close', 'Entendido': 'Got it', 'Atrás': 'Back', 'Siguiente': 'Next', 'Cancelar': 'Cancel',
+    'Bienvenido a Boom Duo': 'Welcome to Boom Duo', 'Saltar': 'Skip', '¡A jugar!': 'Let\'s play!', 'Bienvenida': 'Welcome', 'Ese nombre no está permitido': 'That name isn\'t allowed',
     'Solo se guardan en este dispositivo.': 'They\'re only saved on this device.',
     'Ganadas': 'Won', 'Empates': 'Ties', 'Perdidas': 'Lost',
     'Máquina fácil': 'Easy machine', 'Máquina difícil': 'Hard machine',

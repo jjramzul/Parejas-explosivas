@@ -940,10 +940,12 @@ function showSettings() {
 }
 document.addEventListener('click', ev => { if (ev.target.closest('.gear')) showSettings(); });
 /* Información: cómo se juega y récords */
+const SITE = 'https://parejas-explosivas.web.app/';          // web pública: política de privacidad y soporte
 function showInfo() {
   openSheet(`<h2>Información</h2>
     <div class="infol"><button class="btn sec" id="howto" type="button">¿Cómo se juega?</button><button class="btn sec" id="stats" type="button">Mis récords</button></div>
-    <div class="acts" style="margin-top:18px"><button class="btn" data-act="close">Cerrar</button></div>`);
+    <div class="acts" style="margin-top:18px"><button class="btn" data-act="close">Cerrar</button></div>
+    <p class="infolinks"><a href="${SITE}privacidad.html#${I18N.lang === 'en' ? 'en' : 'es'}" target="_blank" rel="noopener">Política de privacidad</a><span aria-hidden="true">·</span><a href="${SITE}privacidad.html#${I18N.lang === 'en' ? 'support' : 'soporte'}" target="_blank" rel="noopener">Soporte</a></p>`);
   sheet.querySelector('#howto').onclick = () => { Sfx.play('tap'); Tutorial.start(); };
   sheet.querySelector('#stats').onclick = () => { Sfx.play('tap'); showStats(); };
 }

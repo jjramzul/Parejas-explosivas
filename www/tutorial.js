@@ -34,5 +34,31 @@ const Tutorial = (() => {
   function close() { open = false; closeSheet(); }
   function start() { i = 0; open = true; openSheet('', false); render(); setTimeout(() => { const n = sheet.querySelector('.tn'); n && n.focus({ preventScroll: true }); }, 80); }
   scrim.addEventListener('click', ev => { if (open && ev.target === scrim) open = false; });
-  return { start, close, get open() { return open; } };
+
+  /* ---------- Bienvenida a pantalla completa (solo apps nativas, solo la primera vez) ---------- */
+  const OB_KEY = 'pcp-onboarded';
+  let ob = null, oi = 0;
+  const obPages = () => [{ t: 'Bienvenido a Boom Duo', p: 'Encuentra las parejas y usa tus poderes en el momento justo.',
+      art: `<div class="tart">${card(0)}${card(5)}${card(7)}</div>`, hero: true }].concat(pages());
+  function obRender() {
+    const ps = obPages(), pg = ps[oi], last = oi === ps.length - 1;
+    const body = pg.list
+      ? `<h2 class="tt">${pg.t}</h2><div class="plist tlist">${PIDS.map(id => `<div class="prow"><span class="pi">${pIcon(POWERS[id].icon)}</span><span class="pt"><b>${POWERS[id].name}</b><small>${POWERS[id].desc}</small></span></div>`).join('')}</div>`
+      : `<div class="tartw">${pg.art}</div><h2 class="tt">${pg.t}</h2><p class="rules tp">${pg.p}</p>`;
+    ob.innerHTML = `<div class="onbtop"><span></span>${last ? '<span></span>' : '<button type="button" class="onbskip">Saltar</button>'}</div>
+      <div class="onbbody"><div class="onbpage" key="${oi}">${body}</div></div>
+      <div class="onbnav"><span class="tdots" aria-hidden="true">${ps.map((_, k) => `<i${k === oi ? ' class="on"' : ''}></i>`).join('')}</span>
+        <div class="onbbtns">${oi ? '<button type="button" class="btn sec onbback">Atrás</button>' : ''}<button type="button" class="btn onbnext">${last ? '¡A jugar!' : 'Siguiente'}</button></div></div>`;
+    const s = ob.querySelector('.onbskip'); if (s) s.onclick = obClose;
+    const b = ob.querySelector('.onbback'); if (b) b.onclick = () => { oi--; Sfx.play('tap'); obRender(); };
+    ob.querySelector('.onbnext').onclick = () => { if (last) obClose(); else { oi++; Sfx.play('tap'); obRender(); } };
+  }
+  function obClose() { if (!ob) return; const el = ob; ob = null; el.classList.add('out'); setTimeout(() => el.remove(), 350); Sfx.play('tap'); }
+  function onboard() {
+    try { if (localStorage.getItem(OB_KEY)) return; localStorage.setItem(OB_KEY, '1'); } catch (e) { return; }   // se marca al empezar: solo se ve una vez
+    oi = 0; ob = document.createElement('div'); ob.className = 'onb'; ob.setAttribute('role', 'dialog'); ob.setAttribute('aria-modal', 'true'); ob.setAttribute('aria-label', 'Bienvenida');
+    document.body.appendChild(ob); obRender();
+  }
+  if (NATIVE) onboard();                                  // la web no muestra bienvenida
+  return { start, close, onboard, get open() { return open; } };
 })();

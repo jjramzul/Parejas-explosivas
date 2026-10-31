@@ -107,7 +107,16 @@ const Online = (() => {
   const genCode = () => Array.from(crypto.getRandomValues(new Uint32Array(6)), n => ALPHA[n % ALPHA.length]).join('');
 
   /* ---------- Nombres cortos ---------- */
-  const cleanName = s => String(s == null ? '' : s).replace(/[<>&"'`\\\\\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX);
+  /* Filtro básico de nombres: se compara palabra por palabra (sin acentos, con "l33t" y letras repetidas) para no bloquear palabras normales como "computadora". */
+  const BAD = new Set(('puta puto putas putos putita mierda pendejo pendeja marica maricon maricas gonorrea hijueputa hpta hdp malparido malparida culicagado cabron cabrona verga pija pinga coño chingada chinga chingar zorra violador pedofilo nazi hitler kkk ' +
+    'fuck fucker fucking fuk shit shite bitch asshole dick cock pussy cunt slut whore nigger nigga faggot fag retard rapist pedo molester').split(' '));
+  const LEET = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i' };
+  const isBadName = s => {
+    const t = String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[01345 7@$!]/g, c => LEET[c] || c).replace(/(.)\1+/g, '$1');
+    const words = t.split(/[^a-zñ]+/).filter(Boolean);
+    return words.some(w => BAD.has(w)) || BAD.has(words.join(''));
+  };
+  const cleanName = s => isBadName(s) ? '' : String(s == null ? '' : s).replace(/[<>&"'`\\\\\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX);
   const defName = i => 'Jugador ' + (i + 1);
   function namesOf(r, n) {                             // nombres a mostrar; si dos se repiten, el segundo lleva un número
     const seen = {};
@@ -721,7 +730,7 @@ const Online = (() => {
     }).join('');
     const inp = $('#myName');
     if (inp) {
-      inp.oninput = () => { const v = cleanName(inp.value); if (v !== inp.value) inp.value = inp.value.replace(/[<>&"'`\\]/g, '').slice(0, NAME_MAX); saveName(inp.value); };
+      inp.oninput = () => { if (isBadName(inp.value)) { inp.value = ''; toast('Ese nombre no está permitido'); saveName(''); return; } const v = cleanName(inp.value); if (v !== inp.value) inp.value = inp.value.replace(/[<>&"'`\\]/g, '').slice(0, NAME_MAX); saveName(inp.value); };
       inp.onblur = () => { if (!cleanName(inp.value)) { inp.value = defName(seat); saveName(''); } };
       inp.onkeydown = ev => { if (ev.key === 'Enter') inp.blur(); };
       if (keep) { inp.focus(); inp.value = keep.v; try { inp.setSelectionRange(keep.a, keep.b); } catch (e) {} }
